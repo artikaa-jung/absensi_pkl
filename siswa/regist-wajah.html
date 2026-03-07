@@ -2,100 +2,85 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Registrasi Wajah - SIMAPK</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; overflow-x: hidden; }
+        
+        /* Mengatasi tampilan video agar tidak lonjong di HP */
+        #video {
+            transform: scaleX(-1);
+            object-fit: cover;
+        }
+
+        /* Loading Overlay agar user tahu AI sedang dimuat */
+        #loading-overlay {
+            display: flex;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.9);
+            z-index: 99;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            flex-direction: column;
+        }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen flex">
+<body class="bg-slate-50 min-h-screen flex flex-col md:flex-row">
 
-<!-- SIDEBAR -->
-<aside class="w-full md:w-64 bg-slate-900 text-white p-6 flex-shrink-0">
-    <h1 class="text-2xl font-bold mb-8 text-blue-400 tracking-tight">SIMAPK</h1>
-
-    <nav class="space-y-2">
-
-        <a href="dashboard.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition">
-            <i class="fas fa-home mr-3 w-5"></i>Dashboard
-        </a>
-
-        <a href="profil.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition">
-            <i class="fas fa-user-circle mr-3 w-5"></i>Profil
-        </a>
-
-        <a href="absensi.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition">
-            <i class="fas fa-camera mr-3 w-5"></i>Absensi
-        </a>
-
-        <a href="regist-wajah.html" class="flex items-center p-3 rounded bg-blue-600 transition shadow-lg shadow-blue-900/20 font-semibold">
-            <i class="fas fa-user-shield mr-3 w-5"></i>Regist Wajah
-        </a>
-
-        <a href="daftar_pt.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition">
-            <i class="fas fa-building mr-3 w-5"></i>Daftar PT
-        </a>
-
-        <a href="rekap.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition">
-            <i class="fas fa-calendar-check mr-3 w-5"></i>Rekap Absensi
-        </a>
-
-        <hr class="border-slate-700 my-4 opacity-50">
-
-        <button onclick="logout()" class="w-full text-left p-3 rounded text-red-400 hover:bg-red-900/20 transition">
-            <i class="fas fa-sign-out-alt mr-3 w-5"></i>Keluar
-        </button>
-
-    </nav>
-</aside>
-
-
-<!-- CONTENT -->
-<main class="flex-1 flex items-center justify-center p-6">
-
-<div class="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-8 border border-slate-100 text-center">
-
-    <h2 class="text-2xl font-bold text-slate-800 mb-2">Registrasi Wajah</h2>
-    <p class="text-slate-500 text-sm mb-8">
-        Pindai wajah Anda untuk mengaktifkan fitur absensi biometrik.
-    </p>
-
-    <div class="relative aspect-square bg-slate-900 rounded-[2rem] overflow-hidden border-4 border-blue-50 mb-6">
-
-        <video id="video" autoplay playsinline class="w-full h-full object-cover"></video>
-
-        <div class="absolute inset-0 border-[40px] border-slate-900/40 pointer-events-none">
-            <div class="w-full h-full border-2 border-dashed border-blue-400 rounded-full opacity-50"></div>
-        </div>
-
-        <div id="status-badge"
-        class="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-bold whitespace-nowrap">
-
-            <i class="fas fa-spinner fa-spin mr-2" id="status-icon"></i>
-            <span id="status-text">MEMUAT AI...</span>
-
-        </div>
-
-    </div>
-
-    <button onclick="captureFace()" id="btn-capture" disabled
-    class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-200 disabled:bg-slate-300 transition-all hover:bg-blue-700">
-        DAFTARKAN WAJAH SAYA
-    </button>
-
-    <p class="mt-6 text-[10px] text-slate-400 uppercase font-bold tracking-widest">
-        Pastikan pencahayaan cukup terang
-    </p>
-
+<div id="loading-overlay">
+    <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+    <p class="font-bold tracking-widest text-sm">MENYIAPKAN AI BIOMETRIK...</p>
 </div>
 
-</main>
+<aside class="hidden md:flex w-64 bg-slate-900 text-white p-6 flex-shrink-0 flex-col">
+    <h1 class="text-2xl font-black mb-8 text-blue-400 italic">SIMAPK</h1>
+    <nav class="space-y-2 flex-1">
+        <a href="dashboard.html" class="flex items-center p-3 rounded-xl hover:bg-slate-800 transition"><i class="fas fa-home mr-3 w-5"></i>Dashboard</a>
+        <a href="profil.html" class="flex items-center p-3 rounded-xl hover:bg-slate-800 transition"><i class="fas fa-user-circle mr-3 w-5"></i>Profil</a>
+        <a href="absensi.html" class="flex items-center p-3 rounded-xl hover:bg-slate-800 transition"><i class="fas fa-camera mr-3 w-5"></i>Absensi</a>
+        <a href="regist-wajah.html" class="flex items-center p-3 rounded-xl bg-blue-600 font-bold shadow-lg shadow-blue-900/20"><i class="fas fa-user-shield mr-3 w-5"></i>Regist Wajah</a>
+    </nav>
+    <button onclick="logout()" class="p-3 rounded-xl text-red-400 hover:bg-red-900/20 transition flex items-center">
+        <i class="fas fa-sign-out-alt mr-3 w-5"></i>Keluar
+    </button>
+</aside>
 
-</body>
+<main class="flex-1 flex items-center justify-center p-4 md:p-10">
+    <div class="bg-white w-full max-w-md rounded-[2.5rem] shadow-xl p-6 md:p-8 border border-slate-100 text-center">
+        <h2 class="text-xl md:text-2xl font-bold text-slate-800 mb-1">Registrasi Wajah</h2>
+        <p class="text-slate-500 text-xs mb-6 px-4">Pindai wajah Anda untuk mengaktifkan fitur absensi biometrik.</p>
+
+        <div class="relative aspect-square bg-black rounded-[2rem] overflow-hidden border-4 border-slate-100 mb-6 shadow-inner">
+            <video id="video" autoplay playsinline muted class="w-full h-full"></video>
+            
+            <div class="absolute inset-0 border-[30px] border-slate-900/20 pointer-events-none">
+                <div class="w-full h-full border-2 border-dashed border-blue-400/50 rounded-full"></div>
+            </div>
+
+            <div id="status-badge" class="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-slate-900/90 backdrop-blur-sm text-white text-[9px] font-bold tracking-widest uppercase">
+                <i class="fas fa-circle-notch fa-spin mr-2 text-blue-400" id="status-icon"></i>
+                <span id="status-text">Memulai Kamera...</span>
+            </div>
+        </div>
+
+        <button onclick="captureFace()" id="btn-capture" disabled
+            class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-200 disabled:bg-slate-200 disabled:text-slate-400 transition-all active:scale-95">
+            DAFTARKAN WAJAH
+        </button>
+
+        <div class="mt-6 flex items-center justify-center gap-2 text-[9px] text-slate-400 font-bold uppercase tracking-widest">
+            <i class="fas fa-lightbulb text-amber-400 text-xs"></i>
+            <span>Cari area dengan cahaya terang</span>
+        </div>
+    </div>
+</main>
 
 <script>
     const SB_URL = "https://lvrhcsxeowvcrlokospr.supabase.co";
@@ -103,38 +88,30 @@
     const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
     let currentUserId = null;
-    let modelsLoaded = false;
 
     async function init() {
         const { data: { session } } = await _supabase.auth.getSession();
-        if (!session) { window.location.href = 'login.html'; return; }
+        if (!session) { window.location.replace('login.html'); return; }
         currentUserId = session.user.id;
 
-        // --- CEK APAKAH SUDAH PERNAH REGISTRASI ---
         const isRegistered = await checkExistingFace();
         if (isRegistered) {
-            alert("Anda sudah melakukan registrasi wajah sebelumnya. Akses ditolak.");
-            window.location.href = 'dashboard.html';
+            alert("Data wajah sudah terdaftar.");
+            window.location.replace('dashboard.html');
             return;
         }
-        // ------------------------------------------
 
+        await startCamera();
         await loadModels();
-        startCamera();
     }
 
     async function checkExistingFace() {
-        const { data, error } = await _supabase
-            .from('profil_siswa')
-            .select('face_descriptor')
-            .eq('user_id', currentUserId)
-            .maybeSingle();
-        
-        // Jika face_descriptor tidak null dan tidak kosong, berarti sudah daftar
+        const { data } = await _supabase.from('profil_siswa').select('face_descriptor').eq('user_id', currentUserId).maybeSingle();
         return (data && data.face_descriptor !== null);
     }
 
     async function loadModels() {
+        // Gunakan URL model yang stabil
         const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
         try {
             await Promise.all([
@@ -142,65 +119,52 @@
                 faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
                 faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
             ]);
-            modelsLoaded = true;
-            document.getElementById('status-text').innerText = "AI SIAP - POSISIKAN WAJAH";
+            
+            document.getElementById('loading-overlay').style.display = 'none';
+            document.getElementById('status-text').innerText = "AI SIAP";
             document.getElementById('status-icon').className = "fas fa-check-circle text-emerald-400 mr-2";
             document.getElementById('btn-capture').disabled = false;
         } catch (e) {
-            document.getElementById('status-text').innerText = "GAGAL MEMUAT AI";
+            console.error(e);
+            document.getElementById('status-text').innerText = "GAGAL MEMUAT MODEL";
+            alert("Gagal memuat AI. Pastikan internet stabil.");
         }
     }
 
     async function startCamera() {
+        const video = document.getElementById('video');
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-            document.getElementById('video').srcObject = stream;
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    facingMode: "user",
+                    width: { ideal: 640 },
+                    height: { ideal: 640 }
+                } 
+            });
+            video.srcObject = stream;
+            document.getElementById('status-text').innerText = "MEMUAT AI...";
         } catch (e) {
-            alert("Kamera wajib diaktifkan!");
+            alert("Izin kamera ditolak atau tidak ditemukan!");
+            document.getElementById('status-text').innerText = "KAMERA ERROR";
         }
     }
-
-async function logout() {
-    const konfirmasi = confirm("Apakah Anda yakin ingin keluar dari sistem admin?");
-    
-    if (konfirmasi) {
-        try {
-            await _supabase.auth.signOut();
-            localStorage.clear();
-            sessionStorage.clear();
-
-            // PERBAIKAN DI SINI:
-            // Jika dashboard.html ada di dalam folder 'admin'
-            // Gunakan '../' untuk naik satu tingkat ke folder utama tempat login.html berada
-            window.location.replace("../login.html");
-
-        } catch (err) {
-            console.error("Gagal Logout:", err.message);
-            // Backup jika path ../ gagal, coba ke root
-            window.location.replace("/login.html");
-        }
-    }
-}
 
     async function captureFace() {
         const btn = document.getElementById('btn-capture');
         const video = document.getElementById('video');
         
-        // Cek ulang untuk keamanan ganda sebelum upload
-        if (await checkExistingFace()) {
-            alert("Maaf, data wajah sudah ada di sistem.");
-            return;
-        }
-
         btn.disabled = true;
-        btn.innerText = "MENGUNCI DATA...";
+        btn.innerText = "MENGANALISA...";
+        document.getElementById('status-text').innerText = "MENGUNCI TITIK WAJAH...";
 
+        // Deteksi tunggal dengan akurasi tinggi
         const detection = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
 
         if (!detection) {
-            alert("Wajah tidak terdeteksi!");
+            alert("Wajah tidak terdeteksi dengan jelas. Pastikan wajah terlihat penuh di dalam lingkaran.");
             btn.disabled = false;
-            btn.innerText = "DAFTARKAN WAJAH SAYA";
+            btn.innerText = "DAFTARKAN WAJAH";
+            document.getElementById('status-text').innerText = "COBA LAGI";
             return;
         }
 
@@ -212,11 +176,19 @@ async function logout() {
             .eq('user_id', currentUserId);
 
         if (error) {
-            alert("Error: " + error.message);
+            alert("Gagal simpan: " + error.message);
             btn.disabled = false;
         } else {
-            alert("Berhasil! Wajah Anda telah dikunci di sistem.");
-            window.location.href = 'dashboard.html';
+            alert("Registrasi Berhasil!");
+            window.location.replace('dashboard.html');
+        }
+    }
+
+    async function logout() {
+        if (confirm("Keluar?")) {
+            await _supabase.auth.signOut();
+            localStorage.clear();
+            window.location.replace("../login.html");
         }
     }
 
