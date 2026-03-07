@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presensi AI - SIMAPK</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .btn-status { transition: all 0.3s ease; cursor: pointer; }
+        .active-status { border-color: #2563eb !important; background-color: #eff6ff !important; color: #1d4ed8 !important; }
+        .disabled-btn { opacity: 0.5; cursor: not-allowed !important; pointer-events: none; }
+        video { transform: scaleX(-1); }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+       <aside class="w-full md:w-64 bg-slate-900 text-white p-6 flex-shrink-0">
+    <h1 class="text-2xl font-bold mb-8 text-blue-400 tracking-tight">SIMAPK</h1>
+
+    <nav class="space-y-2">
+
+        <!-- Dashboard -->
+        <a href="dashboard.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition">
+            <i class="fas fa-home mr-3"></i>Dashboard
+        </a>
+
+        <!-- Profil -->
+        <a href="profil.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition">
+            <i class="fas fa-user-circle mr-3"></i>Profil
+        </a>
+
+        <!-- Absensi (ACTIVE) -->
+        <a href="absensi.html" class="flex items-center p-3 rounded bg-blue-600 transition shadow-lg shadow-blue-900/20">
+            <i class="fas fa-camera mr-3"></i>Absensi
+        </a>
+
+        <!-- Registrasi Wajah -->
+        <a href="regist-wajah.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition">
+            <i class="fas fa-user-shield mr-3"></i>Regist Wajah
+        </a>
+
+        <!-- Daftar PT -->
+        <a href="daftar_pt.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition">
+            <i class="fas fa-building mr-3"></i>Daftar PT
+        </a>
+
+        <a href="rekap.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition">
+                <i class="fas fa-calendar-check mr-3"></i>Rekap Absensi
+            </a>
+
+        <hr class="border-slate-700 my-4 opacity-50">
+
+        <!-- Logout -->
+        <button onclick="logout()" class="w-full text-left p-3 rounded text-red-400 hover:bg-red-900/20 transition">
+            <i class="fas fa-sign-out-alt mr-3"></i>Keluar
+        </button>
+
+    </nav>
+</aside>
+
+        <main class="flex-1 p-6 md:p-10">
+            <header class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-800 tracking-tight">Presensi Harian</h2>
+                    <p class="text-slate-500 mt-1" id="display-date">Memuat tanggal...</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-4xl font-mono font-black text-blue-600" id="display-clock">00:00:00</p>
+                </div>
+            </header>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div class="lg:col-span-8 space-y-6">
+                    <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200">
+                        <div id="camera-wrapper" class="relative aspect-video bg-slate-900 rounded-[2rem] overflow-hidden border-4 border-slate-50 shadow-inner">
+                            <video id="video" autoplay playsinline class="w-full h-full object-cover"></video>
+                            <canvas id="face-overlay" class="absolute inset-0 w-full h-full"></canvas>
+                            <canvas id="canvas" class="hidden"></canvas>
+                            
+                            <div class="absolute top-4 left-4 flex flex-col gap-2 z-20">
+                                <div class="flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-bold">
+                                    <span id="gps-dot" class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                                    <span id="gps-text">MENCARI LOKASI...</span>
+                                </div>
+                                <div class="flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-bold">
+                                    <span id="face-dot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+                                    <span id="face-text">AI MEMUAT...</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-8 flex flex-wrap gap-3">
+                            <button onclick="setStatus('hadir')" id="s-hadir" class="btn-status active-status flex-1 py-4 rounded-2xl border-2 border-slate-100 font-bold">Hadir</button>
+                            <button onclick="setStatus('izin')" id="s-izin" class="btn-status flex-1 py-4 rounded-2xl border-2 border-slate-100 font-bold">Izin</button>
+                            <button onclick="setStatus('sakit')" id="s-sakit" class="btn-status flex-1 py-4 rounded-2xl border-2 border-slate-100 font-bold">Sakit</button>
+                        </div>
+
+                        <div id="form-tambahan" class="hidden mt-6 animate-fade-in space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Keterangan / Alasan</label>
+                                <textarea id="keterangan" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="Berikan alasan singkat..."></textarea>
+                            </div>
+                            <div id="upload-sakit-cont" class="hidden">
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Unggah Surat Dokter (Foto)</label>
+                                <input type="file" id="foto-sakit" accept="image/*" class="w-full p-3 bg-slate-50 border border-dashed border-slate-300 rounded-2xl file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="aksi-hadir" class="grid grid-cols-2 gap-6">
+                        <button onclick="doAbsen('masuk')" id="btn-masuk" disabled class="py-5 bg-emerald-600 text-white rounded-[2rem] font-bold text-lg shadow-xl shadow-emerald-900/20 disabled:bg-slate-300 transition-all active:scale-95">
+                            <i class="fas fa-sign-in-alt mr-2"></i>Absen Masuk
+                        </button>
+                        <button onclick="doAbsen('pulang')" id="btn-pulang" disabled class="py-5 bg-orange-600 text-white rounded-[2rem] font-bold text-lg shadow-xl shadow-orange-900/20 disabled:bg-slate-300 transition-all active:scale-95">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Absen Pulang
+                        </button>
+                    </div>
+
+                    <div id="aksi-lain" class="hidden">
+                        <button onclick="doAbsen('lain')" id="btn-lain" class="w-full py-5 bg-blue-600 text-white rounded-[2rem] font-bold text-lg shadow-xl shadow-blue-900/20 active:scale-95 transition-all disabled:bg-slate-300">
+                            <i class="fas fa-paper-plane mr-2"></i>Kirim Laporan
+                        </button>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-4 space-y-6">
+                    <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200 h-full">
+                        <h3 class="font-bold text-slate-800 mb-6 flex items-center"><i class="fas fa-history mr-2 text-blue-500"></i> Log Hari Ini</h3>
+                        <div id="log-content" class="space-y-4">
+                            <p class="text-sm text-slate-400 italic">Belum ada aktivitas hari ini.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+<script>
+    const SB_URL = "https://lvrhcsxeowvcrlokospr.supabase.co";
+    const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2cmhjc3hlb3d2Y3Jsb2tvc3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NDEyMjIsImV4cCI6MjA4ODExNzIyMn0.CSsNbgvaf2NR-Jcl91wNRRXIH44CrPF2Fnlv5G3qmI8"; 
+    const _supabase = supabase.createClient(SB_URL, SB_KEY);
+
+    let currentUserId = null, currentLat = null, currentLng = null, selectedStatus = 'hadir';
+    let PT_LOCATION = null, JADWAL = { masuk: null, pulang: null }, cameraStream = null, existingLog = null;
+    let faceMatcher = null, modelsLoaded = false, isFaceVerified = false;
+
+    async function init() {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (!session) { window.location.href = '../login.html'; return; }
+        currentUserId = session.user.id;
+        
+        await loadFaceModels();
+        await getUserData();
+        await loadLogs(); // Load logs FIRST to check if user already absen
+        await startCamera();
+        trackGPS();
+        
+        setInterval(detectFace, 1000);
+    }
+
+    async function loadFaceModels() {
+        const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+        try {
+            await Promise.all([
+                faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+                faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+                faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+            ]);
+            modelsLoaded = true;
+            updateFaceBadge("emerald", "AI SIAP");
+        } catch (e) {
+            updateFaceBadge("rose", "AI GAGAL");
+        }
+    }
+
+// --- TAMBAHKAN VARIABEL INI DI ATAS (DI BAWAH SB_KEY) ---
+    let namaPT_Snapshot = "PT Tidak Diketahui"; 
+
+    async function getUserData() {
+        const { data: profil } = await _supabase
+            .from('profil_siswa')
+            .select(`*, pt!profil_siswa_pt_id_fkey(*)`)
+            .eq('user_id', currentUserId)
+            .maybeSingle();
+
+        if (profil) {
+            JADWAL.masuk = profil.jam_masuk || "07:00";
+            JADWAL.pulang = profil.jam_keluar || "16:00";
+            
+            if (profil.pt) {
+                // AMBIL NAMA PT DARI HASIL SELECT (TANPA MENGUBAH RELASI)
+                namaPT_Snapshot = profil.pt.nama_pt;
+                
+                // Tampilkan nama PT di layar agar user yakin
+                const displayDate = document.getElementById('display-date');
+                if(displayDate) {
+                    displayDate.innerHTML += `<br><span class="text-blue-600 text-xs font-black">[ ${namaPT_Snapshot} ]</span>`;
+                }
+
+                PT_LOCATION = { 
+                    lat: parseFloat(profil.pt.latitude), 
+                    lng: parseFloat(profil.pt.longitude) 
+                };
+            }
+            
+            // Kodingan Face API asli kamu (JANGAN DIGANTI)
+            if (profil.face_descriptor) {
+                const descArray = new Float32Array(Object.values(JSON.parse(profil.face_descriptor)));
+                faceMatcher = new faceapi.FaceMatcher(new faceapi.LabeledFaceDescriptors(currentUserId, [descArray]), 0.55);
+            }
+        }
+    }
+
+async function doAbsen(tipe) {
+    const now = new Date();
+    const today = now.toLocaleDateString('sv-SE');
+    const jamSekarang = now.toLocaleTimeString('en-GB', { hour12: false });
+    
+    // 1. Pastikan GPS sudah ada angkanya sebelum lanjut
+    if (!currentLat || !currentLng) {
+        alert("Gagal: Lokasi belum terdeteksi. Harap tunggu sampai indikator GPS berwarna hijau.");
+        return;
+    }
+
+    // 2. Buat Payload (Koordinat ditaruh paling atas agar prioritas utama)
+    let payload = {
+        latitude: Number(currentLat), 
+        longitude: Number(currentLng),
+        user_id: currentUserId,
+        tanggal: today,
+        status: selectedStatus,
+        nama_pt: namaPT_Snapshot,
+        keterangan: document.getElementById('keterangan').value
+    };
+
+    if (selectedStatus === 'hadir') {
+        const canvas = document.getElementById('canvas');
+        const video = document.getElementById('video');
+        
+        canvas.width = 320; 
+        canvas.height = 240;
+        canvas.getContext('2d').drawImage(video, 0, 0, 320, 240);
+        
+        // Kualitas diturunkan ke 0.2 agar pengiriman data ringan dan tidak gagal
+        payload.foto_url = canvas.toDataURL('image/jpeg', 0.2);
+        
+        if (tipe === 'masuk') payload.jam_masuk = jamSekarang;
+        if (tipe === 'pulang') {
+            payload.jam_pulang = jamSekarang;
+            payload.jam_masuk = existingLog ? existingLog.jam_masuk : null; 
+        }
+    } else if (selectedStatus === 'sakit') {
+        const fileInput = document.getElementById('foto-sakit');
+        if (fileInput.files.length > 0) {
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+                payload.foto_url = reader.result;
+                await submitAbsen(payload);
+            };
+            reader.readAsDataURL(fileInput.files[0]);
+            return;
+        }
+    }
+
+    // 3. Kirim ke Supabase
+    await submitAbsen(payload);
+}
+
+    async function detectFace() {
+        if (!modelsLoaded || selectedStatus !== 'hadir' || !cameraStream) return;
+        const video = document.getElementById('video');
+        const detection = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
+
+        if (detection && faceMatcher) {
+            const match = faceMatcher.findBestMatch(detection.descriptor);
+            if (match.label === currentUserId && match.distance < 0.5) {
+                isFaceVerified = true;
+                updateFaceBadge("emerald", "WAJAH COCOK");
+            } else {
+                isFaceVerified = false;
+                updateFaceBadge("rose", "WAJAH TIDAK DIKENAL");
+            }
+        } else if (!faceMatcher) {
+            isFaceVerified = true; 
+            updateFaceBadge("amber", "BELUM REGISTRASI");
+        } else {
+            isFaceVerified = false;
+            updateFaceBadge("slate", "MENCARI WAJAH...");
+        }
+        updateUI();
+    }
+
+    function updateFaceBadge(color, text) {
+        const dot = document.getElementById('face-dot');
+        const txt = document.getElementById('face-text');
+        if(dot && txt) {
+            dot.className = `w-2.5 h-2.5 rounded-full bg-${color}-500`;
+            txt.innerText = text;
+        }
+    }
+
+    async function startCamera() {
+        if (cameraStream || existingLog && (existingLog.status === 'izin' || existingLog.status === 'sakit')) return;
+        try {
+            cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+            document.getElementById('video').srcObject = cameraStream;
+        } catch(e) { console.error("Kamera Error:", e); }
+    }
+
+    function stopCamera() {
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            cameraStream = null;
+            document.getElementById('video').srcObject = null;
+        }
+    }
+
+function trackGPS() {
+    if (!navigator.geolocation) {
+        alert("Browser Anda tidak mendukung GPS");
+        return;
+    }
+
+    const options = {
+        enableHighAccuracy: true, // WAJIB: Agar koordinat akurat & tidak null
+        timeout: 5000,            // Berhenti mencari jika 5 detik tidak ketemu
+        maximumAge: 0             // Jangan ambil data lokasi lama (cache)
+    };
+
+    navigator.geolocation.watchPosition(
+        (pos) => {
+            currentLat = pos.coords.latitude;
+            currentLng = pos.coords.longitude;
+            console.log("GPS Terdeteksi:", currentLat, currentLng); // Cek di inspect element
+            updateUI();
+        },
+        (err) => {
+            console.warn("ERROR GPS (" + err.code + "): " + err.message);
+            document.getElementById('gps-text').innerText = "GPS ERROR: " + err.message;
+        },
+        options
+    );
+}
+
+    function updateUI() {
+        const now = new Date();
+        const currentTime = now.getHours() * 60 + now.getMinutes();
+        let isNear = false;
+
+        // KUNCI STATUS JIKA SUDAH ABSEN (Hadir/Izin/Sakit)
+        if (existingLog) {
+            document.querySelectorAll('.btn-status').forEach(btn => {
+                btn.classList.add('disabled-btn');
+            });
+            document.getElementById('btn-lain').disabled = true;
+            document.getElementById('keterangan').disabled = true;
+        }
+
+        if (PT_LOCATION && currentLat) {
+            const dist = calculateDistance(currentLat, currentLng, PT_LOCATION.lat, PT_LOCATION.lng);
+            isNear = dist <= 0.1;
+            document.getElementById('gps-dot').className = `w-2.5 h-2.5 rounded-full ${isNear ? 'bg-emerald-500' : 'bg-rose-500'}`;
+            document.getElementById('gps-text').innerText = isNear ? "LOKASI SESUAI" : "DILUAR RADIUS";
+        }
+
+        if (selectedStatus === 'hadir') {
+            const btnM = document.getElementById('btn-masuk');
+            const btnP = document.getElementById('btn-pulang');
+            const canAction = isFaceVerified && isNear;
+
+            if (JADWAL.masuk) {
+                const [h, m] = JADWAL.masuk.split(':');
+                const startLimit = (parseInt(h) * 60 + parseInt(m)) - 120;
+                btnM.disabled = !(canAction && currentTime >= startLimit && (!existingLog || !existingLog.jam_masuk));
+            }
+
+            if (JADWAL.pulang) {
+                const [h, m] = JADWAL.pulang.split(':');
+                const endLimit = (parseInt(h) * 60 + parseInt(m)) - 30;
+                btnP.disabled = !(canAction && currentTime >= endLimit && (existingLog && existingLog.jam_masuk && !existingLog.jam_pulang));
+            }
+        }
+    }
+
+    function setStatus(s) {
+        if (existingLog) return; // Proteksi agar tidak bisa ganti tab jika sudah absen
+
+        selectedStatus = s;
+        document.querySelectorAll('.btn-status').forEach(b => b.classList.remove('active-status'));
+        document.getElementById(`s-${s}`).classList.add('active-status');
+        
+        const cameraWrapper = document.getElementById('camera-wrapper');
+        const aksiHadir = document.getElementById('aksi-hadir');
+        const aksiLain = document.getElementById('aksi-lain');
+        const formT = document.getElementById('form-tambahan');
+        const uploadSakit = document.getElementById('upload-sakit-cont');
+
+        if (s === 'hadir') {
+            cameraWrapper.classList.remove('hidden');
+            aksiHadir.classList.remove('hidden');
+            aksiLain.classList.add('hidden');
+            formT.classList.add('hidden');
+            startCamera();
+        } else {
+            cameraWrapper.classList.add('hidden');
+            aksiHadir.classList.add('hidden');
+            aksiLain.classList.remove('hidden');
+            formT.classList.remove('hidden');
+            uploadSakit.classList.toggle('hidden', s !== 'sakit');
+            stopCamera();
+        }
+    }
+
+
+   async function submitAbsen(payload) {
+    // Cek di console data apa yang mau dikirim
+    console.log("Data yang dikirim ke Supabase:", payload);
+
+    try {
+        const { data, error } = await _supabase
+            .from('absensi')
+            .upsert(payload, { 
+                onConflict: 'user_id, tanggal',
+                ignoreDuplicates: false 
+            })
+            .select(); // Meminta kembalian data untuk konfirmasi
+
+        if (error) throw error;
+
+        console.log("Hasil dari Supabase:", data);
+        alert(`Laporan ${payload.status.toUpperCase()} berhasil terkirim!`);
+        location.reload();
+        
+    } catch (err) {
+        console.error("Gagal kirim ke Supabase:", err.message);
+        alert("Gagal kirim data: " + err.message);
+    }
+}
+
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2-lat1) * Math.PI/180;
+        const dLon = (lon2-lon1) * Math.PI/180;
+        const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    async function loadLogs() {
+        const today = new Date().toLocaleDateString('sv-SE');
+        const { data } = await _supabase.from('absensi').select('*').eq('user_id', currentUserId).eq('tanggal', today).maybeSingle();
+        existingLog = data;
+        
+        if(data) {
+            // Update UI State based on data
+            updateUI();
+            
+            // Set default view based on existing status
+            if (data.status !== 'hadir') {
+                selectedStatus = data.status;
+                setStatus(data.status);
+            }
+
+            document.getElementById('log-content').innerHTML = `
+                <div class="p-5 bg-slate-50 rounded-[2rem] border border-slate-100 text-center animate-fade-in">
+                    <p class="text-[10px] font-bold text-blue-500 mb-2 uppercase tracking-widest">STATUS: ${data.status}</p>
+                    <div class="flex justify-around font-mono font-bold text-lg">
+                        <div class="text-center">
+                            <p class="text-[10px] text-slate-400">MASUK</p>
+                            <span class="${data.jam_masuk ? 'text-emerald-600' : 'text-slate-300'}">${data.jam_masuk || '--:--'}</span>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-[10px] text-slate-400">PULANG</p>
+                            <span class="${data.jam_pulang ? 'text-orange-600' : 'text-slate-300'}">${data.jam_pulang || '--:--'}</span>
+                        </div>
+                    </div>
+                    ${data.keterangan ? `<p class="mt-3 text-xs text-slate-500 italic bg-white p-2 rounded-xl">"${data.keterangan}"</p>` : ''}
+                </div>`;
+        }
+    }
+
+ async function logout() {
+    const konfirmasi = confirm("Apakah Anda yakin ingin keluar dari sistem admin?");
+    
+    if (konfirmasi) {
+        try {
+            await _supabase.auth.signOut();
+            localStorage.clear();
+            sessionStorage.clear();
+
+            // PERBAIKAN DI SINI:
+            // Jika dashboard.html ada di dalam folder 'admin'
+            // Gunakan '../' untuk naik satu tingkat ke folder utama tempat login.html berada
+            window.location.replace("../login.html");
+
+        } catch (err) {
+            console.error("Gagal Logout:", err.message);
+            // Backup jika path ../ gagal, coba ke root
+            window.location.replace("/login.html");
+        }
+    }
+}
+
+    setInterval(() => {
+        document.getElementById('display-clock').innerText = new Date().toLocaleTimeString('id-ID', {hour12:false});
+        document.getElementById('display-date').innerText = new Date().toLocaleDateString('id-ID', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+    }, 1000);
+
+    init();
+
+
+</script>
+</body>
+</html>

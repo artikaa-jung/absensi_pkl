@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rekap Absensi - SIMAPK</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .no-select { user-select: none; }
+        tr { transition: all 0.2s ease; }
+        .custom-scroll::-webkit-scrollbar { height: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+       <aside class="w-full md:w-64 bg-slate-900 text-white p-6 flex-shrink-0">
+    <h1 class="text-2xl font-bold mb-8 text-blue-400 tracking-tight">SIMAPK</h1>
+
+    <nav class="space-y-2">
+
+        <a href="dashboard.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition">
+            <i class="fas fa-home mr-3"></i>Dashboard
+        </a>
+
+        <a href="profil.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition">
+            <i class="fas fa-user-circle mr-3"></i>Profil
+        </a>
+
+        <a href="absensi.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition">
+            <i class="fas fa-camera mr-3"></i>Absensi
+        </a>
+
+        <a href="regist-wajah.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition">
+            <i class="fas fa-user-shield mr-3"></i>Regist Wajah
+        </a>
+
+        <a href="daftar_pt.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition">
+            <i class="fas fa-building mr-3"></i>Daftar PT
+        </a>
+
+        <!-- halaman aktif -->
+        <a href="rekap.html" class="flex items-center p-3 rounded bg-blue-600 transition shadow-lg shadow-blue-900/20">
+            <i class="fas fa-calendar-check mr-3"></i>Rekap Absensi
+        </a>
+
+        <hr class="border-slate-700 my-4 opacity-50">
+
+        <button onclick="logout()" class="w-full text-left p-3 rounded text-red-400 hover:bg-red-900/20 transition">
+            <i class="fas fa-sign-out-alt mr-3"></i>Keluar
+        </button>
+
+    </nav>
+</aside>
+
+        <main class="flex-1 p-6 md:p-10">
+            <header class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-800 tracking-tight">Rekap Kehadiran</h2>
+                    <p class="text-slate-500 mt-1" id="pt-info">Mengambil data penempatan...</p>
+                </div>
+                
+                <div class="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-slate-200 shadow-sm">
+                    <i class="fas fa-calendar-alt text-blue-500"></i>
+                    <input type="month" id="filter-bulan" 
+                        class="bg-transparent border-none text-sm font-bold text-slate-700 focus:ring-0 cursor-pointer outline-none"
+                        onchange="loadRekap()">
+                </div>
+            </header>
+
+            <div class="grid grid-cols-3 gap-4 mb-8">
+                <div class="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm text-center">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Hadir</span>
+                    <p id="total-hadir" class="text-3xl font-black text-emerald-600">0</p>
+                </div>
+                <div class="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm text-center">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Izin</span>
+                    <p id="total-izin" class="text-3xl font-black text-amber-500">0</p>
+                </div>
+                <div class="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm text-center">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Sakit</span>
+                    <p id="total-sakit" class="text-3xl font-black text-rose-500">0</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto custom-scroll">
+                    <table class="w-full text-left border-collapse min-w-[700px]">
+                        <thead>
+                            <tr class="bg-slate-50/50">
+                                <th class="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Tanggal</th>
+                                <th class="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Instansi / PT</th>
+                                <th class="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Status</th>
+                                <th class="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Jam Masuk</th>
+                                <th class="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Jam Pulang</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body" class="no-select text-sm">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+<script>
+    const SB_URL = "https://lvrhcsxeowvcrlokospr.supabase.co";
+    const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2cmhjc3hlb3d2Y3Jsb2tvc3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NDEyMjIsImV4cCI6MjA4ODExNzIyMn0.CSsNbgvaf2NR-Jcl91wNRRXIH44CrPF2Fnlv5G3qmI8";
+    const _supabase = supabase.createClient(SB_URL, SB_KEY);
+
+    let currentUserId = null;
+    let globalNamaPT = "Memuat PT...";
+
+    async function init() {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (!session) { window.location.href = "login.html"; return; }
+        currentUserId = session.user.id;
+
+        await getManualPT();
+
+        const now = new Date();
+        document.getElementById('filter-bulan').value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        
+        loadRekap();
+    }
+
+    async function getManualPT() {
+        try {
+            const { data: profil } = await _supabase
+                .from('profil_siswa')
+                .select('pt_id')
+                .eq('user_id', currentUserId)
+                .single();
+
+            if (profil && profil.pt_id) {
+                const { data: pt } = await _supabase
+                    .from('pt')
+                    .select('nama_pt')
+                    .eq('id', profil.pt_id)
+                    .single();
+                
+                if (pt) {
+                    globalNamaPT = pt.nama_pt;
+                    document.getElementById('pt-info').innerText = `Unit Kerja Saat Ini: ${globalNamaPT}`;
+                }
+            } else {
+                document.getElementById('pt-info').innerText = "PT belum diset di profil.";
+            }
+        } catch (e) {
+            console.error("Gagal load info PT profil");
+        }
+    }
+
+    async function loadRekap() {
+        const selectedMonth = document.getElementById('filter-bulan').value;
+        const tbody = document.getElementById('table-body');
+        
+        // Reset Statistik
+        let stats = { hadir: 0, izin: 0, sakit: 0 };
+        document.getElementById('total-hadir').innerText = '0';
+        document.getElementById('total-izin').innerText = '0';
+        document.getElementById('total-sakit').innerText = '0';
+
+        tbody.innerHTML = `<tr><td colspan="5" class="px-8 py-20 text-center opacity-30"><i class="fas fa-spinner fa-spin text-2xl"></i></td></tr>`;
+
+        try {
+            const [y, m] = selectedMonth.split('-');
+            const lastDay = new Date(y, m, 0).getDate();
+            const startDate = `${selectedMonth}-01`;
+            const endDate = `${selectedMonth}-${lastDay}`;
+
+            // Ambil data dari tabel absensi
+            const { data, error } = await _supabase
+                .from('absensi')
+                .select('*') 
+                .eq('user_id', currentUserId)
+                .gte('tanggal', startDate)
+                .lte('tanggal', endDate)
+                .order('tanggal', { ascending: false });
+
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-8 py-20 text-center text-slate-400 italic">Tidak ada data absen pada bulan ini.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = data.map(row => {
+                // Hitung Statistik
+                if (stats.hasOwnProperty(row.status)) stats[row.status]++;
+
+                const statusConfig = {
+                    hadir: "bg-emerald-100 text-emerald-700",
+                    sakit: "bg-rose-100 text-rose-700",
+                    izin: "bg-amber-100 text-amber-700"
+                };
+                
+                // LOGIKA NAMA PT:
+                // Gunakan row.nama_pt (Snapshot dari tabel absensi). 
+                // Jika kosong (data lama), gunakan globalNamaPT dari profil.
+                const namaPTBaris = row.nama_pt || globalNamaPT || 'PT Tidak Diketahui';
+
+                return `
+                    <tr class="border-b border-slate-50 hover:bg-blue-50/40 transition">
+                        <td class="px-8 py-5 font-bold text-slate-700">
+                            ${new Date(row.tanggal).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'})}
+                        </td>
+                        <td class="px-8 py-5">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-building text-slate-300 text-[10px]"></i>
+                                <span class="text-xs font-bold text-slate-500 uppercase tracking-tight">${namaPTBaris}</span>
+                            </div>
+                        </td>
+                        <td class="px-8 py-5">
+                            <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${statusConfig[row.status] || 'bg-slate-100 text-slate-600'}">
+                                ${row.status}
+                            </span>
+                        </td>
+                        <td class="px-8 py-5 font-mono font-bold text-slate-600">${row.jam_masuk || '--:--'}</td>
+                        <td class="px-8 py-5 font-mono font-bold text-slate-600">${row.jam_pulang || '--:--'}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Update Statistik di UI
+            document.getElementById('total-hadir').innerText = stats.hadir;
+            document.getElementById('total-izin').innerText = stats.izin;
+            document.getElementById('total-sakit').innerText = stats.sakit;
+
+        } catch (err) {
+            console.error(err);
+            tbody.innerHTML = `<tr><td colspan="5" class="px-8 py-20 text-center text-red-500">Terjadi kesalahan saat memuat data.</td></tr>`;
+        }
+    }
+
+async function logout() {
+    const konfirmasi = confirm("Apakah Anda yakin ingin keluar dari sistem admin?");
+    
+    if (konfirmasi) {
+        try {
+            await _supabase.auth.signOut();
+            localStorage.clear();
+            sessionStorage.clear();
+
+            // PERBAIKAN DI SINI:
+            // Jika dashboard.html ada di dalam folder 'admin'
+            // Gunakan '../' untuk naik satu tingkat ke folder utama tempat login.html berada
+            window.location.replace("../login.html");
+
+        } catch (err) {
+            console.error("Gagal Logout:", err.message);
+            // Backup jika path ../ gagal, coba ke root
+            window.location.replace("/login.html");
+        }
+    }
+}
+
+    init();
+</script>
+</body>
+</html>
