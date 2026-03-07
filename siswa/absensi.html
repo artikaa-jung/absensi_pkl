@@ -18,6 +18,15 @@
         video { transform: scaleX(-1); }
         .animate-fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Efek saat tombol ditekan di layar sentuh */
+.btn-status:active {
+    transform: scale(0.95);
+}
+
+/* Memastikan video tidak pecah di HP */
+#video {
+    object-position: center;
+}
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
@@ -81,22 +90,22 @@
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 <div class="lg:col-span-8 space-y-6">
                     <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200">
-                        <div id="camera-wrapper" class="relative aspect-video bg-slate-900 rounded-[2rem] overflow-hidden border-4 border-slate-50 shadow-inner">
-                            <video id="video" autoplay playsinline class="w-full h-full object-cover"></video>
-                            <canvas id="face-overlay" class="absolute inset-0 w-full h-full"></canvas>
-                            <canvas id="canvas" class="hidden"></canvas>
-                            
-                            <div class="absolute top-4 left-4 flex flex-col gap-2 z-20">
-                                <div class="flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-bold">
-                                    <span id="gps-dot" class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                                    <span id="gps-text">MENCARI LOKASI...</span>
-                                </div>
-                                <div class="flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-bold">
-                                    <span id="face-dot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
-                                    <span id="face-text">AI MEMUAT...</span>
-                                </div>
-                            </div>
-                        </div>
+<div id="camera-wrapper" class="relative aspect-square md:aspect-video bg-slate-900 rounded-[2rem] overflow-hidden border-4 border-slate-50 shadow-inner max-h-[60vh] md:max-h-none">
+    <video id="video" autoplay playsinline muted class="w-full h-full object-cover"></video>
+    <canvas id="face-overlay" class="absolute inset-0 w-full h-full"></canvas>
+    <canvas id="canvas" class="hidden"></canvas>
+    
+    <div class="absolute top-4 left-4 right-4 flex flex-row justify-between gap-2 z-20">
+        <div class="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900/80 backdrop-blur-md text-white text-[9px] font-bold border border-white/10">
+            <span id="gps-dot" class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+            <span id="gps-text">MENCARI LOKASI...</span>
+        </div>
+        <div class="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900/80 backdrop-blur-md text-white text-[9px] font-bold border border-white/10">
+            <span id="face-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+            <span id="face-text">AI...</span>
+        </div>
+    </div>
+</div>
 
                         <div class="mt-8 flex flex-wrap gap-3">
                             <button onclick="setStatus('hadir')" id="s-hadir" class="btn-status active-status flex-1 py-4 rounded-2xl border-2 border-slate-100 font-bold">Hadir</button>
@@ -308,13 +317,30 @@ async function doAbsen(tipe) {
         }
     }
 
-    async function startCamera() {
-        if (cameraStream || existingLog && (existingLog.status === 'izin' || existingLog.status === 'sakit')) return;
-        try {
-            cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-            document.getElementById('video').srcObject = cameraStream;
-        } catch(e) { console.error("Kamera Error:", e); }
+async function startCamera() {
+    if (cameraStream || (existingLog && (existingLog.status === 'izin' || existingLog.status === 'sakit'))) return;
+    try {
+        // Mengoptimalkan resolusi untuk HP (Mode Portrait)
+        const constraints = {
+            video: {
+                facingMode: "user",
+                width: { ideal: 720 },
+                height: { ideal: 720 }
+            }
+        };
+        cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+        const videoElement = document.getElementById('video');
+        videoElement.srcObject = cameraStream;
+        
+        // Memastikan video langsung diputar di iOS
+        videoElement.onloadedmetadata = () => {
+            videoElement.play();
+        };
+    } catch(e) { 
+        console.error("Kamera Error:", e);
+        alert("Mohon izinkan akses kamera agar dapat melakukan presensi.");
     }
+}
 
     function stopCamera() {
         if (cameraStream) {
@@ -520,3 +546,4 @@ function trackGPS() {
 </script>
 </body>
 </html>
+
