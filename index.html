@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIMAPK - Selamat Datang</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Animasi melayang untuk gambar */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0px); }
+        }
+        .float-animation { animation: float 4s ease-in-out infinite; }
+        
+        /* Gradient Background */
+        .bg-gradient-custom {
+            background: radial-gradient(circle at top right, #dbeafe 0%, #f8fafc 50%);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 bg-gradient-custom min-h-screen">
+
+<nav class="bg-white/80 backdrop-blur-md shadow-sm fixed w-full top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4">
+        <div class="flex justify-between items-center h-16">
+            <div class="flex items-center space-x-3 text-blue-600 font-bold text-xl">
+                <div class="flex-shrink-0">
+                    <img src="https://lvrhcsxeowvcrlokospr.supabase.co/storage/v1/object/public/absensi-foto/Ac6578ca8d6a443bf8f5113d29321ee268.png" 
+                         alt="Logo SIMAPK" 
+                         class="w-10 h-10 object-contain rounded-lg shadow-sm">
+                </div>
+                
+                <div class="flex flex-col leading-tight">
+                    <span class="text-2xl font-black tracking-tighter text-blue-600 italic">
+                        SIMA<span class="text-slate-800">PK</span>
+                    </span>
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        Sistem Manajemen Absensi PKL
+                    </span>
+                </div>
+            </div>
+
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="login.html" class="text-slate-600 hover:text-blue-600 font-medium transition">Masuk</a>
+                <a href="register.html" class="px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold shadow-lg shadow-blue-200 transition">
+                    Daftar 
+                </a>
+            </div>
+
+            <button id="menu-btn" class="md:hidden text-slate-800 text-2xl">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+    </div>
+
+    <div id="mobile-menu" class="hidden md:hidden bg-white border-t p-4 space-y-3">
+        <a href="login.html" class="block py-2 text-slate-600 font-medium text-center">Masuk</a>
+        <a href="register.html" class="block py-3 bg-blue-600 text-white rounded-xl text-center font-bold">Daftar</a>
+    </div>
+</nav>
+
+<div class="max-w-6xl mx-auto px-6 pt-32 pb-16">
+    <div class="grid md:grid-cols-2 gap-12 items-center">
+        <div class="text-center md:text-left">
+            <span class="inline-block px-4 py-1.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider mb-6">
+                Bagian dari SMKN 02 Kota Bekasi
+            </span>
+            <h1 class="text-4xl md:text-6xl font-black text-slate-900 leading-tight mb-6">
+                Sistem Manajemen <br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-500">
+                    Absensi PKL
+                </span>
+            </h1>
+            <p class="text-slate-600 text-lg mb-10 leading-relaxed">
+                Pantau lokasi GPS dan verifikasi wajah siswa secara otomatis dalam satu dashboard admin melalui SIMAPK.            </p>
+
+            <div class="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+                <a href="register.html" class="px-8 py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition shadow-xl shadow-blue-200 flex items-center justify-center">
+                    Daftar <i class="fa-solid fa-arrow-right ml-2"></i>
+                </a>
+                <a href="#fitur" class="px-8 py-4 bg-white text-slate-700 border border-slate-200 rounded-2xl font-bold hover:bg-slate-50 transition flex items-center justify-center">
+                    Lihat Fitur
+                </a>
+            </div>
+        </div>
+
+        <div class="relative">
+            <div class="absolute -top-10 -right-10 w-64 h-64 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
+            <div class="absolute -bottom-10 -left-10 w-64 h-64 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse delay-700"></div>
+            
+            <img src="https://lvrhcsxeowvcrlokospr.supabase.co/storage/v1/object/public/absensi-foto/image-removebg-preview.png" 
+                  class="w-full max-w-lg mx-auto float-animation relative z-10" 
+                  alt="Monitoring Illustration">
+        </div>
+    </div>
+</div>
+
+<div id="fitur" class="max-w-6xl mx-auto px-6 py-20">
+    <div class="text-center mb-16">
+        <h2 class="text-3xl font-bold text-slate-800">Fitur Unggulan</h2>
+        <p class="text-slate-500 mt-2">Didesain khusus untuk kebutuhan sekolah dan industri</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-8">
+        <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl transition duration-300">
+            <div class="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mb-6">
+                <i class="fa-solid fa-map-location-dot"></i>
+            </div>
+            <h3 class="font-bold text-xl mb-3 text-slate-800">Penandaan GPS</h3>
+            <p class="text-slate-600 text-sm leading-relaxed">Memastikan siswa melakukan absensi tepat di lokasi perusahaan yang sudah ditentukan.</p>
+        </div>
+
+        <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl transition duration-300">
+            <div class="w-14 h-14 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center text-2xl mb-6">
+                <i class="fa-solid fa-camera"></i>
+            </div>
+            <h3 class="font-bold text-xl mb-3 text-slate-800">Verifikasi Selfie</h3>
+            <p class="text-slate-600 text-sm leading-relaxed">Verifikasi kehadiran dengan foto selfie real-time untuk menghindari kecurangan atau titip absen.</p>
+        </div>
+
+        <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl transition duration-300">
+            <div class="w-14 h-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center text-2xl mb-6">
+                <i class="fa-solid fa-file-export"></i>
+            </div>
+            <h3 class="font-bold text-xl mb-3 text-slate-800">Rekap Otomatis</h3>
+            <p class="text-slate-600 text-sm leading-relaxed">Download laporan absensi bulanan dalam format Excel atau PDF hanya dengan satu klik saja.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const btn = document.getElementById("menu-btn");
+    const menu = document.getElementById("mobile-menu");
+
+    btn.addEventListener("click", () => {
+        menu.classList.toggle("hidden");
+    });
+</script>
+
+</body>
+</html>
