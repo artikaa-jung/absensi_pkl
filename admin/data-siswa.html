@@ -90,12 +90,11 @@
                                 <th class="px-8 py-5">Kontak</th>
                                 <th class="px-8 py-5">Penempatan PT</th>
                                 <th class="px-8 py-5">Tgl Masuk</th>
-                                <th class="px-8 py-5 text-center">Aksi</th>
-                            </tr>
+                                </tr>
                         </thead>
                         <tbody id="siswa-table" class="text-sm">
                             <tr>
-                                <td colspan="6" class="px-8 py-20 text-center text-slate-400 italic">
+                                <td colspan="5" class="px-8 py-20 text-center text-slate-400 italic">
                                     <i class="fas fa-spinner fa-spin mr-2"></i>Memuat data siswa...
                                 </td>
                             </tr>
@@ -111,7 +110,6 @@
         const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2cmhjc3hlb3d2Y3Jsb2tvc3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NDEyMjIsImV4cCI6MjA4ODExNzIyMn0.CSsNbgvaf2NR-Jcl91wNRRXIH44CrPF2Fnlv5G3qmI8"; 
         const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
-        // --- SIDEBAR TOGGLE ---
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
@@ -146,14 +144,14 @@
             } catch (err) {
                 console.error("Fetch error:", err);
                 document.getElementById('siswa-table').innerHTML = `
-                    <tr><td colspan="6" class="p-20 text-center text-red-500 font-bold italic">Gagal memuat data. Periksa koneksi Anda.</td></tr>`;
+                    <tr><td colspan="5" class="p-20 text-center text-red-500 font-bold italic">Gagal memuat data. Periksa koneksi Anda.</td></tr>`;
             }
         }
 
         function renderTable(data) {
             const tbody = document.getElementById('siswa-table');
             if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-20 text-center text-slate-400 italic">Tidak ada data siswa terdaftar.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="p-20 text-center text-slate-400 italic">Tidak ada data siswa terdaftar.</td></tr>`;
                 return;
             }
 
@@ -189,16 +187,6 @@
                         </div>
                     </td>
                     <td class="px-8 py-5 text-slate-500 text-[11px] font-bold">${tglMasuk}</td>
-                    <td class="px-8 py-5 text-center">
-                        <div class="flex justify-center gap-2">
-                            <button onclick="editSiswa('${siswa.id}')" class="w-9 h-9 rounded-xl bg-slate-50 text-slate-400 hover:bg-blue-600 hover:text-white transition-all shadow-sm border border-slate-100 flex items-center justify-center">
-                                <i class="fas fa-edit text-xs"></i>
-                            </button>
-                            <button onclick="hapusSiswa('${siswa.id}')" class="w-9 h-9 rounded-xl bg-slate-50 text-slate-400 hover:bg-red-600 hover:text-white transition-all shadow-sm border border-slate-100 flex items-center justify-center">
-                                <i class="fas fa-trash text-xs"></i>
-                            </button>
-                        </div>
-                    </td>
                 </tr>`;
             }).join('');
         }
