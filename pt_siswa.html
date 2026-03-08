@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data PT - SIMAPK Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; overflow-x: hidden; }
+        #sidebar { transition: transform 0.3s ease-in-out; }
+        .no-scroll { overflow: hidden; }
+        .custom-scroll::-webkit-scrollbar { height: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900">
+
+    <div class="md:hidden bg-slate-900 text-white p-4 flex justify-between items-center sticky top-0 z-[60]">
+        <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <i class="fas fa-shield-alt text-xs"></i>
+            </div>
+            <h1 class="font-bold text-blue-400 italic">SIMAPK ADMIN</h1>
+        </div>
+        <button onclick="toggleSidebar()" class="p-2 text-2xl focus:outline-none">
+            <i class="fas fa-bars" id="menu-icon"></i>
+        </button>
+    </div>
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-[70] w-64 bg-slate-900 text-white p-6 transform -translate-x-full md:relative md:translate-x-0 flex-shrink-0 flex flex-col transition-transform duration-300">
+            <div class="hidden md:flex items-center space-x-3 mb-8">
+                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <i class="fas fa-shield-alt text-lg"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-blue-400 tracking-tight italic">SIMAPK</h1>
+            </div>
+            
+            <nav class="space-y-2 flex-1">
+                <a href="dashboard.html" class="flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-slate-400 hover:text-white">
+                    <i class="fas fa-chart-pie mr-3 w-5"></i>Ringkasan
+                </a>
+                <a href="pt_siswa.html" class="flex items-center p-3 rounded-xl bg-blue-600 font-bold shadow-lg shadow-blue-900/20 transition-all text-white">
+                    <i class="fas fa-building mr-3 w-5"></i>Data PT 
+                </a>
+                <a href="monitoring-absen.html" class="flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-slate-400 hover:text-white">
+                    <i class="fas fa-desktop mr-3 w-5"></i>Monitoring Real-time
+                </a>
+                <a href="data-siswa.html" class="flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-slate-400 hover:text-white">
+                    <i class="fas fa-user-graduate mr-3 w-5"></i>Data Siswa
+                </a>
+                <a href="rekap-absen.html" class="flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-slate-400 hover:text-white">
+                    <i class="fas fa-clipboard-list mr-3 w-5"></i>Rekap Absensi
+                </a>
+                
+                <hr class="border-slate-800 my-6">
+                
+                <button onclick="logout()" class="w-full flex items-center p-3 rounded-xl text-red-400 hover:bg-red-900/20 transition font-bold">
+                    <i class="fas fa-sign-out-alt mr-3 w-5"></i>Keluar
+                </button>
+            </nav>
+        </aside>
+
+        <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-[65] hidden md:hidden backdrop-blur-sm"></div>
+
+        <main class="flex-1 p-6 md:p-10">
+            <header class="mb-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                <div>
+                    <h2 class="text-2xl md:text-3xl font-bold text-slate-800 tracking-tight">Data Tempat PKL</h2>
+                    <p class="text-slate-500 text-sm md:text-base">Manajemen perusahaan dan pemetaan siswa PKL.</p>
+                </div>
+                
+                <div class="relative w-full lg:w-96">
+                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="admin-search" onkeyup="handleSearch()" placeholder="Cari PT atau Nama Siswa..." 
+                           class="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition shadow-sm bg-white text-sm">
+                </div>
+            </header>
+
+            <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto custom-scroll">
+                    <table class="w-full text-left border-collapse min-w-[900px]">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-400 text-[10px] uppercase tracking-widest font-black">
+                                <th class="px-8 py-5">Informasi Perusahaan</th>
+                                <th class="px-8 py-5">Lokasi & Alamat</th>
+                                <th class="px-8 py-5">Siswa Terdaftar</th>
+                                <th class="px-8 py-5 text-center">Status Kapasitas</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="verification-table" class="text-sm text-slate-700">
+                            <tr>
+                                <td colspan="4" class="px-8 py-20 text-center italic text-slate-400">
+                                    <i class="fas fa-circle-notch fa-spin mr-2 text-blue-500 text-xl"></i> Memproses data PT...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+<script>
+const SB_URL = "https://lvrhcsxeowvcrlokospr.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2cmhjc3hlb3d2Y3Jsb2tvc3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NDEyMjIsImV4cCI6MjA4ODExNzIyMn0.CSsNbgvaf2NR-Jcl91wNRRXIH44CrPF2Fnlv5G3qmI8";
+const _supabase = supabase.createClient(SB_URL, SB_KEY);
+
+let cachedData = []; 
+
+// --- SIDEBAR TOGGLE ---
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const icon = document.getElementById('menu-icon');
+    const isClosed = sidebar.classList.contains('-translate-x-full');
+
+    if (isClosed) {
+        sidebar.classList.remove('-translate-x-full');
+        overlay.classList.remove('hidden');
+        icon.classList.replace('fa-bars', 'fa-times');
+        document.body.classList.add('no-scroll');
+    } else {
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+        icon.classList.replace('fa-times', 'fa-bars');
+        document.body.classList.remove('no-scroll');
+    }
+}
+
+async function logout() {
+    if (confirm("Keluar dari panel admin?")) {
+        await _supabase.auth.signOut();
+        localStorage.clear();
+        window.location.replace("../login.html");
+    }
+}
+
+async function fetchPengajuan() {
+    const tbody = document.getElementById('verification-table');
+    try {
+        const { data, error } = await _supabase
+            .from('pt')
+            .select(`
+                id, nama_pt, alamat, latitude, longitude,
+                profil_siswa!profil_siswa_pt_id_fkey ( nama, kelas )
+            `)
+            .order('nama_pt', { ascending: true });
+
+        if (error) throw error;
+        cachedData = data;
+        renderTable(data);
+    } catch (err) {
+        console.error("Error:", err);
+        tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-red-500 font-bold italic">Gagal memuat data PT.</td></tr>`;
+    }
+}
+
+function renderTable(data) {
+    const tbody = document.getElementById('verification-table');
+
+    if (!data || data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="p-20 text-center text-slate-400 italic">Data tidak ditemukan.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = data.map(pt => {
+        const profilSiswa = pt.profil_siswa || [];
+        const daftarSiswa = profilSiswa.map(s => s.nama).join(", ");
+        const jumlah = profilSiswa.length;
+
+        // Fix Template Literal for Maps
+        const mapUrl = (pt.latitude && pt.longitude) 
+            ? `https://www.google.com/maps?q=${pt.latitude},${pt.longitude}` 
+            : '#';
+
+        const hasMap = mapUrl !== '#';
+
+        return `
+            <tr class="border-b border-slate-50 hover:bg-blue-50/30 transition group">
+                <td class="px-8 py-6">
+                    <div class="font-bold text-slate-800 text-base leading-tight group-hover:text-blue-600 transition-colors">${pt.nama_pt}</div>
+                    <div class="text-[10px] text-slate-400 font-mono mt-1.5 uppercase tracking-tighter">ID: ${pt.id ? pt.id.split('-')[0] : 'N/A'}</div>
+                </td>
+                <td class="px-8 py-6">
+                    <div class="text-xs text-slate-600 max-w-xs leading-relaxed mb-2">${pt.alamat || '<span class="italic text-slate-300">Alamat belum diinput</span>'}</div>
+                    <a href="${mapUrl}" target="${hasMap ? '_blank' : '_self'}" 
+                       class="${hasMap ? 'text-blue-600 hover:text-blue-800' : 'text-slate-300 cursor-not-allowed'} flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider transition-all">
+                        <i class="fas fa-location-arrow"></i> ${hasMap ? 'Lihat di Maps' : 'Koordinat Kosong'}
+                    </a>
+                </td>
+                <td class="px-8 py-6">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-lg text-[10px] font-black tracking-tight underline-offset-4 decoration-2">
+                            ${jumlah} PERSONEL
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 leading-relaxed font-medium line-clamp-2">
+                        ${daftarSiswa || 'Belum ada siswa terpilih'}
+                    </p>
+                </td>
+                <td class="px-8 py-6 text-center">
+                    ${jumlah > 0 
+                        ? '<span class="px-4 py-1.5 bg-emerald-100 text-emerald-600 text-[10px] font-black rounded-full border border-emerald-200 tracking-widest">TERISI</span>'
+                        : '<span class="px-4 py-1.5 bg-slate-100 text-slate-400 text-[10px] font-black rounded-full border border-slate-200 tracking-widest">VACANT</span>'}
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function handleSearch() {
+    const keyword = document.getElementById('admin-search').value.toLowerCase();
+    const filtered = cachedData.filter(pt => {
+        const matchPT = pt.nama_pt.toLowerCase().includes(keyword);
+        const matchSiswa = pt.profil_siswa && pt.profil_siswa.some(s => s.nama.toLowerCase().includes(keyword));
+        return matchPT || matchSiswa;
+    });
+    renderTable(filtered);
+}
+
+document.addEventListener('DOMContentLoaded', fetchPengajuan);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Siswa - SIMAPK Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        #sidebar { transition: transform 0.3s ease-in-out; }
+        .no-scroll { overflow: hidden; }
+        .custom-scroll::-webkit-scrollbar { height: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+    <div class="md:hidden bg-slate-900 text-white p-4 flex justify-between items-center sticky top-0 z-[60]">
+        <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <i class="fas fa-shield-alt text-xs"></i>
+            </div>
+            <h1 class="font-bold text-blue-400 italic">SIMAPK ADMIN</h1>
+        </div>
+        <button onclick="toggleSidebar()" class="p-2 text-2xl focus:outline-none">
+            <i class="fas fa-bars" id="menu-icon"></i>
+        </button>
+    </div>
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-[70] w-64 bg-slate-900 text-white p-6 transform -translate-x-full md:relative md:translate-x-0 flex-shrink-0 flex flex-col transition-transform duration-300">
+            <div class="hidden md:flex items-center space-x-3 mb-8">
+                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <i class="fas fa-shield-alt text-lg"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-blue-400 tracking-tight italic">SIMAPK</h1>
+            </div>
+            
+            <nav class="space-y-2 flex-1">
+                <a href="dashboard.html" class="flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-slate-400 hover:text-white">
+                    <i class="fas fa-chart-pie mr-3 w-5"></i>Ringkasan
+                </a>
+                <a href="pt_siswa.html" class="flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-slate-400 hover:text-white">
+                    <i class="fas fa-building mr-3 w-5"></i>Data PT
+                </a>
+                <a href="monitoring-absen.html" class="flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-slate-400 hover:text-white">
+                    <i class="fas fa-desktop mr-3 w-5"></i>Monitoring Real-time
+                </a>
+                <a href="data-siswa.html" class="flex items-center p-3 rounded-xl bg-blue-600 font-bold shadow-lg shadow-blue-900/20 transition-all text-white">
+                    <i class="fas fa-user-graduate mr-3 w-5"></i>Data Siswa
+                </a>
+                <a href="rekap-absen.html" class="flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-slate-400 hover:text-white">
+                    <i class="fas fa-clipboard-list mr-3 w-5"></i>Rekap Absensi
+                </a>
+                
+                <hr class="border-slate-800 my-6">
+                
+                <button onclick="logout()" class="w-full flex items-center p-3 rounded-xl text-red-400 hover:bg-red-900/20 transition font-bold">
+                    <i class="fas fa-sign-out-alt mr-3 w-5"></i>Keluar
+                </button>
+            </nav>
+        </aside>
+
+        <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-[65] hidden md:hidden backdrop-blur-sm"></div>
+
+        <main class="flex-1 p-6 md:p-10">
+            <header class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div>
+                    <h2 class="text-2xl md:text-3xl font-bold text-slate-800 tracking-tight">Manajemen Siswa</h2>
+                    <p class="text-slate-500 text-sm md:text-base">Daftar lengkap informasi siswa PKL dan penempatan PT.</p>
+                </div>
+                <div class="relative w-full md:w-72">
+                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="search-input" onkeyup="searchSiswa()" placeholder="Cari nama, NIS, atau PT..." 
+                           class="pl-11 pr-5 py-3 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none w-full shadow-sm text-sm">
+                </div>
+            </header>
+
+            <div class="bg-white rounded-[2rem] md:rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto custom-scroll">
+                    <table class="w-full text-left border-collapse min-w-[800px]">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-400 text-[10px] uppercase tracking-widest font-black">
+                                <th class="px-8 py-5">Siswa & NIS</th>
+                                <th class="px-8 py-5">Kelas</th>
+                                <th class="px-8 py-5">Kontak</th>
+                                <th class="px-8 py-5">Penempatan PT</th>
+                                <th class="px-8 py-5">Tgl Masuk</th>
+                                <th class="px-8 py-5 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="siswa-table" class="text-sm">
+                            <tr>
+                                <td colspan="6" class="px-8 py-20 text-center text-slate-400 italic">
+                                    <i class="fas fa-spinner fa-spin mr-2"></i>Memuat data siswa...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const SB_URL = "https://lvrhcsxeowvcrlokospr.supabase.co";
+        const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2cmhjc3hlb3d2Y3Jsb2tvc3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NDEyMjIsImV4cCI6MjA4ODExNzIyMn0.CSsNbgvaf2NR-Jcl91wNRRXIH44CrPF2Fnlv5G3qmI8"; 
+        const _supabase = supabase.createClient(SB_URL, SB_KEY);
+
+        // --- SIDEBAR TOGGLE ---
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const icon = document.getElementById('menu-icon');
+            const isClosed = sidebar.classList.contains('-translate-x-full');
+
+            if (isClosed) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+                icon.classList.replace('fa-bars', 'fa-times');
+                document.body.classList.add('no-scroll');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+                icon.classList.replace('fa-times', 'fa-bars');
+                document.body.classList.remove('no-scroll');
+            }
+        }
+
+        async function fetchSiswa() {
+            try {
+                const { data, error } = await _supabase
+                    .from('profil_siswa')
+                    .select(`
+                        *,
+                        pt!profil_siswa_pt_id_fkey ( nama_pt )
+                    `)
+                    .order('nama', { ascending: true });
+
+                if (error) throw error;
+                renderTable(data);
+            } catch (err) {
+                console.error("Fetch error:", err);
+                document.getElementById('siswa-table').innerHTML = `
+                    <tr><td colspan="6" class="p-20 text-center text-red-500 font-bold italic">Gagal memuat data. Periksa koneksi Anda.</td></tr>`;
+            }
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('siswa-table');
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-20 text-center text-slate-400 italic">Tidak ada data siswa terdaftar.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = data.map(siswa => {
+                const tglMasuk = siswa.tgl_masuk_pkl 
+                    ? new Date(siswa.tgl_masuk_pkl).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) 
+                    : '-';
+
+                const namaPT = (siswa.pt && siswa.pt.nama_pt) 
+                    ? siswa.pt.nama_pt 
+                    : '<span class="text-rose-400 italic">Belum Set PT</span>';
+
+                return `
+                <tr class="border-b border-slate-50 hover:bg-blue-50/30 transition group">
+                    <td class="px-8 py-5">
+                        <p class="font-bold text-slate-700 leading-tight">${siswa.nama || 'Siswa Tanpa Nama'}</p>
+                        <p class="text-[10px] font-mono text-blue-500 font-bold mt-1 uppercase tracking-tighter">${siswa.nis || 'NIS -'}</p>
+                    </td>
+                    <td class="px-8 py-5 text-slate-600 font-medium">${siswa.kelas || '-'}</td>
+                    <td class="px-8 py-5 text-slate-600">
+                        ${siswa.no_tlp ? `
+                        <a href="https://wa.me/${siswa.no_tlp.replace(/\D/g,'')}" target="_blank" class="hover:text-green-600 transition flex items-center gap-2 group/wa">
+                            <i class="fab fa-whatsapp text-green-500 text-base"></i> 
+                            <span class="text-xs font-bold group-hover/wa:underline">${siswa.no_tlp}</span>
+                        </a>` : '-'}
+                    </td>
+                    <td class="px-8 py-5">
+                        <div class="flex flex-col">
+                            <span class="text-sm font-black text-slate-800 leading-tight">${namaPT}</span>
+                            <span class="text-[10px] text-slate-400 font-bold uppercase mt-1">
+                                <i class="fas fa-user-tie mr-1 text-slate-300"></i>${siswa.pembimbing_pkl || 'No Mentor'}
+                            </span>
+                        </div>
+                    </td>
+                    <td class="px-8 py-5 text-slate-500 text-[11px] font-bold">${tglMasuk}</td>
+                    <td class="px-8 py-5 text-center">
+                        <div class="flex justify-center gap-2">
+                            <button onclick="editSiswa('${siswa.id}')" class="w-9 h-9 rounded-xl bg-slate-50 text-slate-400 hover:bg-blue-600 hover:text-white transition-all shadow-sm border border-slate-100 flex items-center justify-center">
+                                <i class="fas fa-edit text-xs"></i>
+                            </button>
+                            <button onclick="hapusSiswa('${siswa.id}')" class="w-9 h-9 rounded-xl bg-slate-50 text-slate-400 hover:bg-red-600 hover:text-white transition-all shadow-sm border border-slate-100 flex items-center justify-center">
+                                <i class="fas fa-trash text-xs"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function searchSiswa() {
+            const input = document.getElementById('search-input').value.toUpperCase();
+            const rows = document.getElementById('siswa-table').getElementsByTagName('tr');
+
+            for (let i = 0; i < rows.length; i++) {
+                const text = rows[i].innerText.toUpperCase();
+                rows[i].style.display = text.indexOf(input) > -1 ? "" : "none";
+            }
+        }
+
+        async function logout() {
+            if (confirm("Apakah Anda yakin ingin keluar dari sistem admin?")) {
+                await _supabase.auth.signOut();
+                localStorage.clear();
+                window.location.replace("../login.html");
+            }
+        }
+
+        fetchSiswa();
+    </script>
+</body>
+</html>

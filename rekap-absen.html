@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rekap Absensi - SIMAPK Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        #sidebar { transition: transform 0.3s ease-in-out; }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; padding: 0; }
+            .content-card { border: none !important; box-shadow: none !important; width: 100% !important; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th { 
+                background-color: #f1f5f9 !important; color: black !important;
+                -webkit-print-color-adjust: exact; border: 1px solid #cbd5e1 !important;
+                font-size: 10pt !important; padding: 10px !important;
+            }
+            td { border: 1px solid #cbd5e1 !important; padding: 8px !important; font-size: 9pt !important; color: black !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+    <div class="md:hidden bg-slate-900 text-white p-4 flex justify-between items-center sticky top-0 z-[60] no-print">
+        <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <i class="fas fa-shield-alt text-xs"></i>
+            </div>
+            <h1 class="font-bold text-blue-400 italic">SIMAPK ADMIN</h1>
+        </div>
+        <button onclick="toggleSidebar()" class="p-2 text-2xl focus:outline-none">
+            <i class="fas fa-bars" id="menu-icon"></i>
+        </button>
+    </div>
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-[70] w-64 bg-slate-900 text-white p-6 transform -translate-x-full md:relative md:translate-x-0 flex-shrink-0 flex flex-col transition-transform duration-300 no-print">
+            <div class="hidden md:flex items-center space-x-3 mb-8">
+                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <i class="fas fa-shield-alt text-lg"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-blue-400 tracking-tight italic">SIMAPK</h1>
+            </div>
+            
+            <nav class="space-y-2 flex-1">
+                <a href="dashboard.html" class="flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-slate-400 hover:text-white">
+                    <i class="fas fa-chart-pie mr-3 w-5"></i>Ringkasan
+                </a>
+                <a href="pt_siswa.html" class="flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-slate-400 hover:text-white">
+                    <i class="fas fa-building mr-3 w-5"></i>Data PT 
+                </a>
+                <a href="monitoring-absen.html" class="flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-slate-400 hover:text-white">
+                    <i class="fas fa-desktop mr-3 w-5"></i>Monitoring Real-time
+                </a>
+                <a href="data-siswa.html" class="flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-slate-400 hover:text-white">
+                    <i class="fas fa-user-graduate mr-3 w-5"></i>Data Siswa
+                </a>
+                <a href="rekap-absen.html" class="flex items-center p-3 rounded-xl bg-blue-600 font-bold shadow-lg shadow-blue-900/20 transition-all text-white">
+                    <i class="fas fa-clipboard-list mr-3 w-5"></i>Rekap Absensi
+                </a>
+                
+                <hr class="border-slate-800 my-6">
+                
+                <button onclick="logout()" class="w-full flex items-center p-3 rounded-xl text-red-400 hover:bg-red-900/20 transition font-bold">
+                    <i class="fas fa-sign-out-alt mr-3 w-5"></i>Keluar
+                </button>
+            </nav>
+        </aside>
+
+        <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-[65] hidden md:hidden backdrop-blur-sm no-print"></div>
+
+        <main class="flex-1 p-6 md:p-10">
+            <div class="hidden print:block mb-8 text-center border-b-4 border-double border-slate-900 pb-4">
+                <h1 class="text-2xl font-bold uppercase tracking-tight">Laporan Kehadiran Siswa PKL</h1>
+                <h2 class="text-xl font-semibold uppercase mt-1">SMK Negeri 2 Kota Bekasi</h2>
+                <p class="text-slate-600 mt-2 text-sm" id="print-subtitle"></p>
+            </div>
+
+            <header class="mb-10 no-print flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-800 tracking-tight">Rekap Absensi</h2>
+                    <p class="text-slate-500">Analisis data kehadiran seluruh siswa secara akurat.</p>
+                </div>
+                <div class="flex flex-wrap gap-3 w-full xl:w-auto">
+                    <button onclick="exportToExcel()" class="flex-1 xl:flex-none bg-emerald-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-emerald-700 transition flex items-center justify-center shadow-lg shadow-emerald-200">
+                        <i class="fas fa-file-excel mr-2"></i> Ekspor Excel
+                    </button>
+                    <button onclick="preparePrint()" class="flex-1 xl:flex-none bg-slate-900 text-white px-6 py-3 rounded-2xl font-bold hover:bg-slate-800 transition flex items-center justify-center shadow-lg shadow-slate-200">
+                        <i class="fas fa-print mr-2"></i> Cetak PDF
+                    </button>
+                </div>
+            </header>
+
+            <div class="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm mb-8 no-print">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Pencarian Nama</label>
+                        <input type="text" id="search-name" onkeyup="fetchRekapData()" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-blue-400 font-bold text-sm" placeholder="Ketik nama siswa...">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Filter Kelas</label>
+                        <select id="filter-kelas" onchange="fetchRekapData()" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-blue-400 font-bold text-sm">
+                            <option value="">Semua Kelas</option>
+                            <option value="XI TKJ 1">XI TKJ 1</option>
+                            <option value="XI TKJ 2">XI TKJ 2</option>
+                            <option value="XI TKJ 3">XI TKJ 3</option>
+                            <option value="XI TKJ 4">XI TKJ 4</option>
+                        </select>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Dari Tanggal</label>
+                        <input type="date" id="start-date" onchange="fetchRekapData()" class="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-blue-400 font-bold text-sm">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Sampai Tanggal</label>
+                        <input type="date" id="end-date" onchange="fetchRekapData()" class="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-blue-400 font-bold text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl overflow-hidden content-card">
+                <div class="p-8 border-b border-slate-50 flex justify-between items-center no-print">
+                    <h3 class="font-bold text-xl text-slate-800">Daftar Kehadiran</h3>
+                    <span id="range-label" class="text-sm text-slate-400 italic font-semibold">Memuat rentang...</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                <th class="p-6">Siswa</th>
+                                <th class="p-6">Instansi / PT</th>
+                                <th class="p-6">Tanggal</th>
+                                <th class="p-6">Masuk</th>
+                                <th class="p-6">Pulang</th>
+                                <th class="p-6">Status</th>
+                                <th class="p-6">Keterangan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rekap-table" class="text-slate-600 divide-y divide-slate-50">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const SB_URL = "https://lvrhcsxeowvcrlokospr.supabase.co";
+        const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2cmhjc3hlb3d2Y3Jsb2tvc3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NDEyMjIsImV4cCI6MjA4ODExNzIyMn0.CSsNbgvaf2NR-Jcl91wNRRXIH44CrPF2Fnlv5G3qmI8"; 
+        const _supabase = supabase.createClient(SB_URL, SB_KEY);
+
+        const startDateInput = document.getElementById('start-date');
+        const endDateInput = document.getElementById('end-date');
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const menuIcon = document.getElementById('menu-icon');
+            
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+            menuIcon.classList.toggle('fa-bars');
+            menuIcon.classList.toggle('fa-times');
+        }
+
+        function initDates() {
+            const savedStart = sessionStorage.getItem('rekap_startDate');
+            const savedEnd = sessionStorage.getItem('rekap_endDate');
+            const now = new Date();
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            
+            const toISODate = (date) => {
+                const offset = date.getTimezoneOffset() * 60000;
+                return new Date(date - offset).toISOString().split('T')[0];
+            };
+
+            startDateInput.value = savedStart || toISODate(firstDay);
+            endDateInput.value = savedEnd || toISODate(now);
+        }
+
+        async function logout() {
+            if (confirm("Apakah Anda yakin ingin keluar?")) {
+                try {
+                    await _supabase.auth.signOut();
+                    localStorage.clear();
+                    window.location.replace("../login.html");
+                } catch (err) {
+                    alert("Gagal keluar: " + err.message);
+                }
+            }
+        }
+
+        async function fetchRekapData() {
+            const tbody = document.getElementById('rekap-table');
+            const startDate = startDateInput.value;
+            const endDate = endDateInput.value;
+            const searchName = document.getElementById('search-name').value.toLowerCase();
+            const filterKelas = document.getElementById('filter-kelas').value;
+
+            sessionStorage.setItem('rekap_startDate', startDate);
+            sessionStorage.setItem('rekap_endDate', endDate);
+
+            const rangeLabel = document.getElementById('range-label');
+            if (rangeLabel) {
+                rangeLabel.innerText = `${formatDate(startDate)} - ${formatDate(endDate)}`;
+            }
+
+            try {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-10 text-center text-slate-400 italic"><i class="fas fa-spinner fa-spin mr-2"></i>Sinkronisasi data...</td></tr>`;
+
+                const { data: absensi, error } = await _supabase
+                    .from('absensi')
+                    .select(`
+                        *, 
+                        profil_siswa!fk_absensi_profil (
+                            nama, 
+                            kelas, 
+                            pt_id
+                        )
+                    `)
+                    .gte('tanggal', startDate)
+                    .lte('tanggal', endDate)
+                    .order('tanggal', { ascending: false });
+
+                if (error) throw error;
+
+                const { data: daftarPT } = await _supabase.from('pt').select('id, nama_pt');
+
+                const filteredData = absensi.filter(item => {
+                    const profil = item.profil_siswa || {};
+                    const matchesName = (profil.nama || "").toLowerCase().includes(searchName);
+                    const matchesKelas = filterKelas === "" || profil.kelas === filterKelas;
+                    return matchesName && matchesKelas;
+                });
+
+                if (filteredData.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" class="p-10 text-center text-slate-400 italic">Tidak ada data untuk periode ini.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = filteredData.map(item => {
+                    const profil = item.profil_siswa || { nama: 'Tidak Diketahui', kelas: '-' };
+                    let namaPT = item.nama_pt; 
+                    if (!namaPT && profil.pt_id && daftarPT) {
+                        const ptFound = daftarPT.find(p => p.id === profil.pt_id);
+                        namaPT = ptFound ? ptFound.nama_pt : 'PT Tidak Ditemukan';
+                    }
+
+                    return `
+                        <tr class="hover:bg-slate-50 border-b border-slate-50 transition group">
+                            <td class="p-6">
+                                <p class="font-bold text-slate-800">${profil.nama}</p>
+                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">${profil.kelas}</p>
+                            </td>
+                            <td class="p-6">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-building text-blue-400 text-[10px]"></i>
+                                    <span class="text-xs font-bold text-slate-600 uppercase tracking-tight">${namaPT || '-'}</span>
+                                </div>
+                            </td>
+                            <td class="p-6 text-sm text-slate-500">${formatDate(item.tanggal)}</td>
+                            <td class="p-6 font-mono text-emerald-600 font-bold">${item.jam_masuk || '--:--'}</td>
+                            <td class="p-6 font-mono text-orange-600 font-bold">${item.jam_pulang || '--:--'}</td>
+                            <td class="p-6">
+                                <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase ${getStatusClass(item.status)}">
+                                    ${item.status}
+                                </span>
+                            </td>
+                            <td class="p-6 text-sm text-slate-400 italic">${item.keterangan || '-'}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = `<tr><td colspan="7" class="p-10 text-center text-red-500 font-bold">Koneksi Gagal: ${err.message}</td></tr>`;
+            }
+        }
+
+        function getStatusClass(status) {
+            const s = status ? status.toLowerCase() : '';
+            if(s === 'hadir') return 'bg-emerald-100 text-emerald-600';
+            if(s === 'izin') return 'bg-amber-100 text-amber-600';
+            if(s === 'sakit') return 'bg-rose-100 text-rose-600';
+            return 'bg-slate-100 text-slate-600';
+        }
+
+        function formatDate(dateStr) {
+            if(!dateStr) return '-';
+            return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        }
+
+        function exportToExcel() {
+            const rows = Array.from(document.querySelectorAll("#rekap-table tr"));
+            const excelData = [
+                ["LAPORAN ABSENSI SISWA PKL - SMK NEGERI 2 KOTA BEKASI"],
+                ["Periode:", startDateInput.value, "s/d", endDateInput.value],
+                [],
+                ["Nama Siswa", "Kelas", "Instansi / PT", "Tanggal", "Jam Masuk", "Jam Pulang", "Status", "Keterangan"]
+            ];
+
+            rows.forEach(row => {
+                const cols = row.querySelectorAll("td");
+                if (cols.length > 0) {
+                    excelData.push([
+                        cols[0].querySelector("p").innerText,
+                        cols[0].querySelectorAll("p")[1].innerText,
+                        cols[1].innerText.trim(),
+                        cols[2].innerText,
+                        cols[3].innerText,
+                        cols[4].innerText,
+                        cols[5].innerText.trim(),
+                        cols[6].innerText
+                    ]);
+                }
+            });
+
+            const worksheet = XLSX.utils.aoa_to_sheet(excelData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Rekap");
+            XLSX.writeFile(workbook, `Rekap_Absen_${new Date().getTime()}.xlsx`);
+        }
+
+        function preparePrint() {
+            document.getElementById('print-subtitle').innerText = `Periode: ${formatDate(startDateInput.value)} s/d ${formatDate(endDateInput.value)}`;
+            window.print();
+        }
+
+        initDates();
+        fetchRekapData();
+    </script>
+</body>
+</html>

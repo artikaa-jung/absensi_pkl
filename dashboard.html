@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - SIMAPK</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; overflow-x: hidden; }
+        
+        #sidebar { transition: transform 0.3s ease-in-out; }
+        .no-scroll { overflow: hidden; }
+        
+        /* Custom Table Scrollbar */
+        .custom-scroll::-webkit-scrollbar { height: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+    <div class="md:hidden bg-slate-900 text-white p-4 flex justify-between items-center sticky top-0 z-[60]">
+        <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <i class="fas fa-shield-alt text-xs"></i>
+            </div>
+            <h1 class="font-bold text-blue-400 italic">SIMAPK ADMIN</h1>
+        </div>
+        <button onclick="toggleSidebar()" class="p-2 text-2xl focus:outline-none">
+            <i class="fas fa-bars" id="menu-icon"></i>
+        </button>
+    </div>
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-[70] w-64 bg-slate-900 text-white p-6 transform -translate-x-full md:relative md:translate-x-0 flex-shrink-0 flex flex-col transition-transform duration-300">
+            <div class="hidden md:flex items-center space-x-3 mb-8">
+                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <i class="fas fa-shield-alt text-lg"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-blue-400 tracking-tight italic">SIMAPK</h1>
+            </div>
+            
+            <nav class="space-y-2 flex-1">
+                <a href="dashboard.html" class="flex items-center p-3 rounded-xl bg-blue-600 font-bold shadow-lg shadow-blue-900/20 transition-all text-white">
+                    <i class="fas fa-chart-pie mr-3 w-5"></i>Ringkasan
+                </a>
+                <a href="pt_siswa.html" class="flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-slate-400 hover:text-white">
+                    <i class="fas fa-building mr-3 w-5"></i>Data PT 
+                </a>
+                <a href="monitoring-absen.html" class="flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-slate-400 hover:text-white">
+                    <i class="fas fa-desktop mr-3 w-5"></i>Monitoring Real-time
+                </a>
+                <a href="data-siswa.html" class="flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-slate-400 hover:text-white">
+                    <i class="fas fa-user-graduate mr-3 w-5"></i>Data Siswa
+                </a>
+                <a href="rekap-absen.html" class="flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-slate-400 hover:text-white">
+                    <i class="fas fa-clipboard-list mr-3 w-5"></i>Rekap Absensi
+                </a>
+                
+                <hr class="border-slate-800 my-6">
+                
+                <button onclick="logout()" class="w-full flex items-center p-3 rounded-xl text-red-400 hover:bg-red-900/20 transition font-bold">
+                    <i class="fas fa-sign-out-alt mr-3 w-5"></i>Keluar
+                </button>
+            </nav>
+        </aside>
+
+        <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-[65] hidden md:hidden backdrop-blur-sm"></div>
+
+        <main class="flex-1 p-6 md:p-10">
+            <header class="mb-10">
+                <h2 class="text-2xl md:text-3xl font-bold text-slate-800 tracking-tight">Dashboard Admin</h2>
+                <p class="text-slate-500 text-sm md:text-base mt-1" id="current-date">Memuat data hari ini...</p>
+            </header>
+
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-10">
+                <div class="bg-white p-5 md:p-6 rounded-3xl border border-slate-200 shadow-sm">
+                    <div class="w-10 h-10 md:w-12 md:h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-4 text-lg md:text-xl">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <p class="text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider">Hadir</p>
+                    <h3 class="text-2xl md:text-3xl font-black text-slate-800" id="stat-hadir">0</h3>
+                </div>
+                <div class="bg-white p-5 md:p-6 rounded-3xl border border-slate-200 shadow-sm">
+                    <div class="w-10 h-10 md:w-12 md:h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mb-4 text-lg md:text-xl">
+                        <i class="fas fa-envelope-open-text"></i>
+                    </div>
+                    <p class="text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider">Izin</p>
+                    <h3 class="text-2xl md:text-3xl font-black text-slate-800" id="stat-izin">0</h3>
+                </div>
+                <div class="bg-white p-5 md:p-6 rounded-3xl border border-slate-200 shadow-sm">
+                    <div class="w-10 h-10 md:w-12 md:h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mb-4 text-lg md:text-xl">
+                        <i class="fas fa-briefcase-medical"></i>
+                    </div>
+                    <p class="text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider">Sakit</p>
+                    <h3 class="text-2xl md:text-3xl font-black text-slate-800" id="stat-sakit">0</h3>
+                </div>
+                <div class="bg-white p-5 md:p-6 rounded-3xl border border-slate-200 shadow-sm">
+                    <div class="w-10 h-10 md:w-12 md:h-12 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center mb-4 text-lg md:text-xl">
+                        <i class="fas fa-user-clock"></i>
+                    </div>
+                    <p class="text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider">Belum Absen</p>
+                    <h3 class="text-2xl md:text-3xl font-black text-slate-800" id="stat-total">0</h3>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-[2rem] md:rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-6 md:p-8 border-b border-slate-100 flex justify-between items-center">
+                    <h3 class="text-lg md:text-xl font-bold text-slate-800">Absensi Terbaru</h3>
+                    <button onclick="fetchData()" class="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-all active:scale-90">
+                        <i class="fas fa-sync-alt" id="refresh-icon"></i>
+                    </button>
+                </div>
+                <div class="overflow-x-auto custom-scroll">
+                    <table class="w-full text-left border-collapse min-w-[600px]">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-400 text-[10px] uppercase tracking-widest font-black">
+                                <th class="px-6 md:px-8 py-4">Siswa</th>
+                                <th class="px-6 md:px-8 py-4">Masuk</th>
+                                <th class="px-6 md:px-8 py-4">Pulang</th>
+                                <th class="px-6 md:px-8 py-4 text-center">Status</th>
+                                <th class="px-6 md:px-8 py-4 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendance-table" class="text-sm">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="modal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-4">
+        <div class="max-w-md w-full animate-in zoom-in duration-300">
+            <img id="modal-img" src="" class="w-full rounded-[2rem] border-4 border-white shadow-2xl">
+            <button onclick="closeModal()" class="mt-6 w-full py-4 bg-white text-slate-900 font-bold rounded-2xl shadow-xl active:scale-95 transition-all">Tutup</button>
+        </div>
+    </div>
+
+<script>
+const SB_URL = "https://lvrhcsxeowvcrlokospr.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2cmhjc3hlb3d2Y3Jsb2tvc3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NDEyMjIsImV4cCI6MjA4ODExNzIyMn0.CSsNbgvaf2NR-Jcl91wNRRXIH44CrPF2Fnlv5G3qmI8";
+const _supabase = supabase.createClient(SB_URL, SB_KEY);
+
+// --- SIDEBAR TOGGLE ---
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const icon = document.getElementById('menu-icon');
+    const isClosed = sidebar.classList.contains('-translate-x-full');
+
+    if (isClosed) {
+        sidebar.classList.remove('-translate-x-full');
+        overlay.classList.remove('hidden');
+        icon.classList.replace('fa-bars', 'fa-times');
+        document.body.classList.add('no-scroll');
+    } else {
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+        icon.classList.replace('fa-times', 'fa-bars');
+        document.body.classList.remove('no-scroll');
+    }
+}
+
+function getLocalDate() {
+    const now = new Date();
+    const offset = now.getTimezoneOffset() * 60000;
+    return (new Date(now - offset)).toISOString().slice(0, 10);
+}
+
+async function fetchData() {
+    const today = getLocalDate();
+    const icon = document.getElementById('refresh-icon');
+    icon.classList.add('fa-spin');
+    
+    document.getElementById('current-date').innerText = new Date().toLocaleDateString('id-ID', { 
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' 
+    });
+
+    try {
+        const { data, error } = await _supabase
+            .from('absensi')
+            .select(`
+                *,
+                profil_siswa!absensi_user_id_fkey ( nama )
+            `) 
+            .eq('tanggal', today)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        await renderStats(data);
+        renderTable(data);
+
+    } catch (err) {
+        console.error("Fetch error:", err.message);
+        document.getElementById('attendance-table').innerHTML = `<tr><td colspan="5" class="px-8 py-10 text-center text-red-500 font-bold italic">Terjadi kesalahan koneksi.</td></tr>`;
+    } finally {
+        setTimeout(() => icon.classList.remove('fa-spin'), 500);
+    }
+}
+
+async function renderStats(dataAbsensi) {
+    const hadir = dataAbsensi.filter(d => d.status?.toLowerCase() === 'hadir').length;
+    const izin = dataAbsensi.filter(d => d.status?.toLowerCase() === 'izin').length;
+    const sakit = dataAbsensi.filter(d => d.status?.toLowerCase() === 'sakit').length;
+
+    document.getElementById('stat-hadir').innerText = hadir;
+    document.getElementById('stat-izin').innerText = izin;
+    document.getElementById('stat-sakit').innerText = sakit;
+
+    try {
+        const { count } = await _supabase
+            .from('profil_siswa')
+            .select('*', { count: 'exact', head: true });
+
+        const totalSiswa = count || 0;
+        const sudahAbsen = hadir + izin + sakit;
+        document.getElementById('stat-total').innerText = Math.max(0, totalSiswa - sudahAbsen);
+    } catch (e) { console.error(e); }
+}
+
+function renderTable(data) {
+    const tbody = document.getElementById('attendance-table');
+    
+    if (!data || data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="px-8 py-20 text-center text-slate-400 italic">Belum ada aktivitas absensi hari ini.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = data.map(item => {
+        const namaSiswa = item.profil_siswa?.nama || item.absensi_user_id_fkey?.nama || `<span class="text-rose-400 italic">Siswa Anonim</span>`;
+        
+        return `
+            <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition">
+                <td class="px-6 md:px-8 py-5">
+                    <p class="font-bold text-slate-700 leading-tight">${namaSiswa}</p>
+                    <p class="text-[9px] text-slate-400 font-mono mt-1">${item.user_id.substring(0,8)}</p>
+                </td>
+                <td class="px-6 md:px-8 py-5 font-mono text-emerald-600 font-bold text-xs">${item.jam_masuk || '--:--'}</td>
+                <td class="px-6 md:px-8 py-5 font-mono text-orange-600 font-bold text-xs">${item.jam_pulang || '--:--'}</td>
+                <td class="px-6 md:px-8 py-5 text-center">
+                    <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${getStatusClass(item.status)}">
+                        ${item.status}
+                    </span>
+                </td>
+                <td class="px-6 md:px-8 py-5 text-center">
+                    ${item.foto_url ? `
+                        <button onclick="viewPhoto('${item.foto_url}')" class="w-9 h-9 md:w-10 md:h-10 rounded-xl overflow-hidden border-2 border-white shadow-sm hover:ring-2 hover:ring-blue-400 transition-all inline-block">
+                            <img src="${item.foto_url}" class="w-full h-full object-cover">
+                        </button>
+                    ` : '<span class="text-slate-300 text-xs italic">Tanpa Foto</span>'}
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function getStatusClass(status) {
+    const s = status?.toLowerCase();
+    switch(s) {
+        case 'hadir': return 'bg-emerald-100 text-emerald-700';
+        case 'izin': return 'bg-amber-100 text-amber-700';
+        case 'sakit': return 'bg-rose-100 text-rose-700';
+        default: return 'bg-slate-100 text-slate-700';
+    }
+}
+
+function viewPhoto(url) {
+    document.getElementById('modal-img').src = url;
+    document.getElementById('modal').classList.remove('hidden');
+    document.body.classList.add('no-scroll');
+}
+
+function closeModal() {
+    document.getElementById('modal').classList.add('hidden');
+    document.body.classList.remove('no-scroll');
+}
+
+async function logout() {
+    if (confirm("Keluar dari panel admin?")) {
+        await _supabase.auth.signOut();
+        localStorage.clear();
+        window.location.replace("../login.html");
+    }
+}
+
+document.addEventListener('DOMContentLoaded', fetchData);
+</script>
+</body>
+</html>
