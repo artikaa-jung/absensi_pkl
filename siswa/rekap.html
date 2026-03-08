@@ -14,90 +14,95 @@
         tr { transition: all 0.2s ease; }
         .custom-scroll::-webkit-scrollbar { height: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        
+        /* Sidebar Transition */
+        #sidebar { transition: transform 0.3s ease-in-out; }
+        .no-scroll { overflow: hidden; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
 
-    <div class="flex flex-col md:flex-row min-h-screen">
-       <aside class="w-full md:w-64 bg-slate-900 text-white p-6 flex-shrink-0">
-    <h1 class="text-2xl font-bold mb-8 text-blue-400 tracking-tight">SIMAPK</h1>
-
-    <nav class="space-y-2">
-
-        <a href="dashboard.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition">
-            <i class="fas fa-home mr-3"></i>Dashboard
-        </a>
-
-        <a href="profil.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition">
-            <i class="fas fa-user-circle mr-3"></i>Profil
-        </a>
-
-        <a href="absensi.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition">
-            <i class="fas fa-camera mr-3"></i>Absensi
-        </a>
-
-        <a href="regist-wajah.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition">
-            <i class="fas fa-user-shield mr-3"></i>Regist Wajah
-        </a>
-
-        <a href="daftar_pt.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition">
-            <i class="fas fa-building mr-3"></i>Daftar PT
-        </a>
-
-        <!-- halaman aktif -->
-        <a href="rekap.html" class="flex items-center p-3 rounded bg-blue-600 transition shadow-lg shadow-blue-900/20">
-            <i class="fas fa-calendar-check mr-3"></i>Rekap Absensi
-        </a>
-
-        <hr class="border-slate-700 my-4 opacity-50">
-
-        <button onclick="logout()" class="w-full text-left p-3 rounded text-red-400 hover:bg-red-900/20 transition">
-            <i class="fas fa-sign-out-alt mr-3"></i>Keluar
+    <div class="md:hidden bg-slate-900 text-white p-4 flex justify-between items-center sticky top-0 z-[60]">
+        <h1 class="text-xl font-bold text-blue-400">SIMAPK</h1>
+        <button onclick="toggleSidebar()" class="p-2 text-2xl focus:outline-none">
+            <i class="fas fa-bars" id="menu-icon"></i>
         </button>
+    </div>
 
-    </nav>
-</aside>
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-[70] w-64 bg-slate-900 text-white p-6 transform -translate-x-full md:relative md:translate-x-0 flex-shrink-0 flex flex-col transition-transform duration-300">
+            <h1 class="hidden md:block text-2xl font-bold mb-8 text-blue-400 tracking-tight">SIMAPK</h1>
+
+            <nav class="space-y-2 flex-1">
+                <a href="dashboard.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition text-slate-300">
+                    <i class="fas fa-home mr-3 w-5"></i>Dashboard
+                </a>
+                <a href="profil.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition text-slate-300">
+                    <i class="fas fa-user-circle mr-3 w-5"></i>Profil
+                </a>
+                <a href="absensi.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition text-slate-300">
+                    <i class="fas fa-camera mr-3 w-5"></i>Absensi
+                </a>
+                <a href="regist-wajah.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition text-slate-300">
+                    <i class="fas fa-user-shield mr-3 w-5"></i>Regist Wajah
+                </a>
+                <a href="daftar_pt.html" class="flex items-center p-3 rounded hover:bg-slate-800 transition text-slate-300">
+                    <i class="fas fa-building mr-3 w-5"></i>Daftar PT
+                </a>
+                <a href="rekap.html" class="flex items-center p-3 rounded bg-blue-600 transition shadow-lg shadow-blue-900/20 text-white">
+                    <i class="fas fa-calendar-check mr-3 w-5"></i>Rekap Absensi
+                </a>
+
+                <hr class="border-slate-700 my-4 opacity-50">
+
+                <button onclick="logout()" class="w-full text-left p-3 rounded text-red-400 hover:bg-red-900/20 transition">
+                    <i class="fas fa-sign-out-alt mr-3 w-5"></i>Keluar
+                </button>
+            </nav>
+        </aside>
+
+        <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-[65] hidden md:hidden"></div>
 
         <main class="flex-1 p-6 md:p-10">
             <header class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h2 class="text-3xl font-bold text-slate-800 tracking-tight">Rekap Kehadiran</h2>
-                    <p class="text-slate-500 mt-1" id="pt-info">Mengambil data penempatan...</p>
+                    <h2 class="text-2xl md:text-3xl font-bold text-slate-800 tracking-tight">Rekap Kehadiran</h2>
+                    <p class="text-slate-500 mt-1 text-sm" id="pt-info">Mengambil data penempatan...</p>
                 </div>
                 
-                <div class="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-slate-200 shadow-sm w-full md:w-auto">
                     <i class="fas fa-calendar-alt text-blue-500"></i>
                     <input type="month" id="filter-bulan" 
-                        class="bg-transparent border-none text-sm font-bold text-slate-700 focus:ring-0 cursor-pointer outline-none"
+                        class="bg-transparent border-none text-sm font-bold text-slate-700 focus:ring-0 cursor-pointer outline-none w-full"
                         onchange="loadRekap()">
                 </div>
             </header>
 
-            <div class="grid grid-cols-3 gap-4 mb-8">
-                <div class="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm text-center">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Hadir</span>
-                    <p id="total-hadir" class="text-3xl font-black text-emerald-600">0</p>
+            <div class="grid grid-cols-3 gap-3 md:gap-6 mb-8">
+                <div class="bg-white p-4 md:p-5 rounded-2xl md:rounded-[2rem] border border-slate-100 shadow-sm text-center">
+                    <span class="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase block mb-1">Hadir</span>
+                    <p id="total-hadir" class="text-2xl md:text-3xl font-black text-emerald-600">0</p>
                 </div>
-                <div class="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm text-center">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Izin</span>
-                    <p id="total-izin" class="text-3xl font-black text-amber-500">0</p>
+                <div class="bg-white p-4 md:p-5 rounded-2xl md:rounded-[2rem] border border-slate-100 shadow-sm text-center">
+                    <span class="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase block mb-1">Izin</span>
+                    <p id="total-izin" class="text-2xl md:text-3xl font-black text-amber-500">0</p>
                 </div>
-                <div class="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm text-center">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Sakit</span>
-                    <p id="total-sakit" class="text-3xl font-black text-rose-500">0</p>
+                <div class="bg-white p-4 md:p-5 rounded-2xl md:rounded-[2rem] border border-slate-100 shadow-sm text-center">
+                    <span class="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase block mb-1">Sakit</span>
+                    <p id="total-sakit" class="text-2xl md:text-3xl font-black text-rose-500">0</p>
                 </div>
             </div>
 
-            <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-white rounded-3xl md:rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
                 <div class="overflow-x-auto custom-scroll">
-                    <table class="w-full text-left border-collapse min-w-[700px]">
+                    <table class="w-full text-left border-collapse min-w-[650px]">
                         <thead>
                             <tr class="bg-slate-50/50">
-                                <th class="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Tanggal</th>
-                                <th class="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Instansi / PT</th>
-                                <th class="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Status</th>
-                                <th class="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Jam Masuk</th>
-                                <th class="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Jam Pulang</th>
+                                <th class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Tanggal</th>
+                                <th class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Unit Kerja</th>
+                                <th class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100 text-center">Status</th>
+                                <th class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Masuk</th>
+                                <th class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">Pulang</th>
                             </tr>
                         </thead>
                         <tbody id="table-body" class="no-select text-sm">
@@ -116,9 +121,29 @@
     let currentUserId = null;
     let globalNamaPT = "Memuat PT...";
 
+    // --- SIDEBAR TOGGLE ---
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const icon = document.getElementById('menu-icon');
+        const isClosed = sidebar.classList.contains('-translate-x-full');
+
+        if (isClosed) {
+            sidebar.classList.remove('-translate-x-full');
+            overlay.classList.remove('hidden');
+            icon.classList.replace('fa-bars', 'fa-times');
+            document.body.classList.add('no-scroll');
+        } else {
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.add('hidden');
+            icon.classList.replace('fa-times', 'fa-bars');
+            document.body.classList.remove('no-scroll');
+        }
+    }
+
     async function init() {
         const { data: { session } } = await _supabase.auth.getSession();
-        if (!session) { window.location.href = "login.html"; return; }
+        if (!session) { window.location.href = "../login.html"; return; }
         currentUserId = session.user.id;
 
         await getManualPT();
@@ -146,10 +171,10 @@
                 
                 if (pt) {
                     globalNamaPT = pt.nama_pt;
-                    document.getElementById('pt-info').innerText = `Unit Kerja Saat Ini: ${globalNamaPT}`;
+                    document.getElementById('pt-info').innerText = `Unit Kerja: ${globalNamaPT}`;
                 }
             } else {
-                document.getElementById('pt-info').innerText = "PT belum diset di profil.";
+                document.getElementById('pt-info').innerText = "Lokasi PKL belum ditentukan.";
             }
         } catch (e) {
             console.error("Gagal load info PT profil");
@@ -160,13 +185,12 @@
         const selectedMonth = document.getElementById('filter-bulan').value;
         const tbody = document.getElementById('table-body');
         
-        // Reset Statistik
         let stats = { hadir: 0, izin: 0, sakit: 0 };
         document.getElementById('total-hadir').innerText = '0';
         document.getElementById('total-izin').innerText = '0';
         document.getElementById('total-sakit').innerText = '0';
 
-        tbody.innerHTML = `<tr><td colspan="5" class="px-8 py-20 text-center opacity-30"><i class="fas fa-spinner fa-spin text-2xl"></i></td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="px-8 py-20 text-center opacity-30"><i class="fas fa-spinner fa-spin text-2xl text-blue-600"></i></td></tr>`;
 
         try {
             const [y, m] = selectedMonth.split('-');
@@ -174,7 +198,6 @@
             const startDate = `${selectedMonth}-01`;
             const endDate = `${selectedMonth}-${lastDay}`;
 
-            // Ambil data dari tabel absensi
             const { data, error } = await _supabase
                 .from('absensi')
                 .select('*') 
@@ -186,12 +209,11 @@
             if (error) throw error;
 
             if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="px-8 py-20 text-center text-slate-400 italic">Tidak ada data absen pada bulan ini.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="px-8 py-20 text-center text-slate-400 italic">Data tidak ditemukan pada periode ini.</td></tr>`;
                 return;
             }
 
             tbody.innerHTML = data.map(row => {
-                // Hitung Statistik
                 if (stats.hasOwnProperty(row.status)) stats[row.status]++;
 
                 const statusConfig = {
@@ -200,65 +222,43 @@
                     izin: "bg-amber-100 text-amber-700"
                 };
                 
-                // LOGIKA NAMA PT:
-                // Gunakan row.nama_pt (Snapshot dari tabel absensi). 
-                // Jika kosong (data lama), gunakan globalNamaPT dari profil.
-                const namaPTBaris = row.nama_pt || globalNamaPT || 'PT Tidak Diketahui';
+                const namaPTBaris = row.nama_pt || globalNamaPT || 'Unit PKL';
 
                 return `
                     <tr class="border-b border-slate-50 hover:bg-blue-50/40 transition">
-                        <td class="px-8 py-5 font-bold text-slate-700">
+                        <td class="px-6 py-4 font-bold text-slate-700">
                             ${new Date(row.tanggal).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'})}
                         </td>
-                        <td class="px-8 py-5">
-                            <div class="flex items-center gap-2">
-                                <i class="fas fa-building text-slate-300 text-[10px]"></i>
-                                <span class="text-xs font-bold text-slate-500 uppercase tracking-tight">${namaPTBaris}</span>
-                            </div>
+                        <td class="px-6 py-4">
+                            <span class="text-[11px] font-bold text-slate-500 uppercase">${namaPTBaris}</span>
                         </td>
-                        <td class="px-8 py-5">
+                        <td class="px-6 py-4 text-center">
                             <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${statusConfig[row.status] || 'bg-slate-100 text-slate-600'}">
                                 ${row.status}
                             </span>
                         </td>
-                        <td class="px-8 py-5 font-mono font-bold text-slate-600">${row.jam_masuk || '--:--'}</td>
-                        <td class="px-8 py-5 font-mono font-bold text-slate-600">${row.jam_pulang || '--:--'}</td>
+                        <td class="px-6 py-4 font-mono font-bold text-slate-600 text-xs">${row.jam_masuk || '--:--'}</td>
+                        <td class="px-6 py-4 font-mono font-bold text-slate-600 text-xs">${row.jam_pulang || '--:--'}</td>
                     </tr>
                 `;
             }).join('');
 
-            // Update Statistik di UI
             document.getElementById('total-hadir').innerText = stats.hadir;
             document.getElementById('total-izin').innerText = stats.izin;
             document.getElementById('total-sakit').innerText = stats.sakit;
 
         } catch (err) {
-            console.error(err);
-            tbody.innerHTML = `<tr><td colspan="5" class="px-8 py-20 text-center text-red-500">Terjadi kesalahan saat memuat data.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="px-8 py-20 text-center text-red-500">Gagal mengambil data.</td></tr>`;
         }
     }
 
-async function logout() {
-    const konfirmasi = confirm("Apakah Anda yakin ingin keluar dari sistem admin?");
-    
-    if (konfirmasi) {
-        try {
+    async function logout() {
+        if (confirm("Keluar dari aplikasi?")) {
             await _supabase.auth.signOut();
             localStorage.clear();
-            sessionStorage.clear();
-
-            // PERBAIKAN DI SINI:
-            // Jika dashboard.html ada di dalam folder 'admin'
-            // Gunakan '../' untuk naik satu tingkat ke folder utama tempat login.html berada
             window.location.replace("../login.html");
-
-        } catch (err) {
-            console.error("Gagal Logout:", err.message);
-            // Backup jika path ../ gagal, coba ke root
-            window.location.replace("/login.html");
         }
     }
-}
 
     init();
 </script>
