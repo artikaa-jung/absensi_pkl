@@ -83,13 +83,13 @@
 
             <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
                 <div class="overflow-x-auto custom-scroll">
-                    <table class="w-full text-left border-collapse min-w-[800px]">
+                    <table class="w-full text-left border-collapse min-w-[900px]">
                         <thead>
                             <tr class="bg-slate-50 text-slate-400 text-[10px] uppercase tracking-widest font-black">
                                 <th class="px-8 py-5">Informasi Perusahaan</th>
                                 <th class="px-8 py-5">Lokasi & Alamat</th>
                                 <th class="px-8 py-5">Siswa Terdaftar</th>
-                                <th class="px-8 py-5 text-center">Status</th>
+                                <th class="px-8 py-5 text-center">Status Kapasitas</th>
                             </tr>
                         </thead>
 
@@ -113,15 +113,24 @@ const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
 let cachedData = []; 
 
+// --- SIDEBAR TOGGLE ---
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
     const icon = document.getElementById('menu-icon');
-    
-    sidebar.classList.toggle('-translate-x-full');
-    overlay.classList.toggle('hidden');
-    icon.classList.toggle('fa-bars');
-    icon.classList.toggle('fa-times');
+    const isClosed = sidebar.classList.contains('-translate-x-full');
+
+    if (isClosed) {
+        sidebar.classList.remove('-translate-x-full');
+        overlay.classList.remove('hidden');
+        icon.classList.replace('fa-bars', 'fa-times');
+        document.body.classList.add('no-scroll');
+    } else {
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+        icon.classList.replace('fa-times', 'fa-bars');
+        document.body.classList.remove('no-scroll');
+    }
 }
 
 async function logout() {
@@ -139,7 +148,7 @@ async function fetchPengajuan() {
             .from('pt')
             .select(`
                 id, nama_pt, alamat, latitude, longitude,
-                profil_siswa ( nama, kelas )
+                profil_siswa!profil_siswa_pt_id_fkey ( nama, kelas )
             `)
             .order('nama_pt', { ascending: true });
 
@@ -165,28 +174,29 @@ function renderTable(data) {
         const daftarSiswa = profilSiswa.map(s => s.nama).join(", ");
         const jumlah = profilSiswa.length;
 
-        // PERBAIKAN: Format Google Maps URL & Template Literal
-        const hasCoords = pt.latitude && pt.longitude;
-        const mapUrl = hasCoords 
+        // Fix Template Literal for Maps
+        const mapUrl = (pt.latitude && pt.longitude) 
             ? `https://www.google.com/maps?q=${pt.latitude},${pt.longitude}` 
             : '#';
+
+        const hasMap = mapUrl !== '#';
 
         return `
             <tr class="border-b border-slate-50 hover:bg-blue-50/30 transition group">
                 <td class="px-8 py-6">
-                    <div class="font-bold text-slate-800 text-base leading-tight group-hover:text-blue-600 transition-colors">${pt.nama_pt || 'N/A'}</div>
-                    <div class="text-[10px] text-slate-400 font-mono mt-1.5 uppercase tracking-tighter">ID: ${pt.id ? pt.id.toString().split('-')[0] : 'N/A'}</div>
+                    <div class="font-bold text-slate-800 text-base leading-tight group-hover:text-blue-600 transition-colors">${pt.nama_pt}</div>
+                    <div class="text-[10px] text-slate-400 font-mono mt-1.5 uppercase tracking-tighter">ID: ${pt.id ? pt.id.split('-')[0] : 'N/A'}</div>
                 </td>
                 <td class="px-8 py-6">
                     <div class="text-xs text-slate-600 max-w-xs leading-relaxed mb-2">${pt.alamat || '<span class="italic text-slate-300">Alamat belum diinput</span>'}</div>
-                    <a href="${mapUrl}" target="${hasCoords ? '_blank' : '_self'}" 
-                       class="${hasCoords ? 'text-blue-600 hover:text-blue-800' : 'text-slate-300 cursor-not-allowed'} flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider transition-all">
-                        <i class="fas fa-location-arrow"></i> ${hasCoords ? 'Lihat di Maps' : 'Koordinat Kosong'}
+                    <a href="${mapUrl}" target="${hasMap ? '_blank' : '_self'}" 
+                       class="${hasMap ? 'text-blue-600 hover:text-blue-800' : 'text-slate-300 cursor-not-allowed'} flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider transition-all">
+                        <i class="fas fa-location-arrow"></i> ${hasMap ? 'Lihat di Maps' : 'Koordinat Kosong'}
                     </a>
                 </td>
                 <td class="px-8 py-6">
                     <div class="flex items-center gap-2 mb-2">
-                        <span class="px-2.5 py-1 ${jumlah > 0 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-400'} rounded-lg text-[10px] font-black tracking-tight">
+                        <span class="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-lg text-[10px] font-black tracking-tight underline-offset-4 decoration-2">
                             ${jumlah} PERSONEL
                         </span>
                     </div>
@@ -207,8 +217,8 @@ function renderTable(data) {
 function handleSearch() {
     const keyword = document.getElementById('admin-search').value.toLowerCase();
     const filtered = cachedData.filter(pt => {
-        const matchPT = pt.nama_pt?.toLowerCase().includes(keyword);
-        const matchSiswa = pt.profil_siswa?.some(s => s.nama.toLowerCase().includes(keyword));
+        const matchPT = pt.nama_pt.toLowerCase().includes(keyword);
+        const matchSiswa = pt.profil_siswa && pt.profil_siswa.some(s => s.nama.toLowerCase().includes(keyword));
         return matchPT || matchSiswa;
     });
     renderTable(filtered);
